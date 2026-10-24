@@ -22,11 +22,29 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/cesium/Build/Cesium/Workers",
+                "output": "/assets/cesium/Workers"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/cesium/Build/Cesium/ThirdParty",
+                "output": "/assets/cesium/ThirdParty"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/cesium/Build/Cesium/Assets",
+                "output": "/assets/cesium/Assets"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/cesium/Build/Cesium/Widgets",
+                "output": "/assets/cesium/Widgets"
               }
             ],
-            "styles": [
-              "src/styles.css"
-            ]
+            "styles": ["src/styles.css", "node_modules/cesium/Build/Cesium/Widgets/widgets.css"]
           },
           "configurations": {
             "production": {
@@ -47,7 +65,13 @@
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.development.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"

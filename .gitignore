@@ -16,6 +16,8 @@
 .env
 .env.*
 !.env.example
+frontend/src/environments/environment.ts
+frontend/src/environments/environment.development.ts
 
 # Angular CLI and build artefacts
 /.angular-cli.json
