@@ -1,3 +1,19 @@
 {
-    "app.hello": "Hola"
+    "header": {
+        "logoLabel": "SubegIA, volver arriba",
+        "menuToggle": "Abrir o cerrar menu",
+        "nav": {
+            "label": "Principal",
+            "explore": "Explorar",
+            "project": "El proyecto",
+            "howItWorks": "Cómo funciona",
+            "limitations": "Limitaciones"
+        },
+        "language": {
+            "label": "Idioma",
+            "es": "Español",
+            "en": "English",
+            "eu": "Euskara"
+        }
+    }
 }

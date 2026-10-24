@@ -1,0 +1,56 @@
+<div class="header">
+  <a
+    href="#"
+    class="titleContainer"
+    [attr.aria-label]="'header.logoLabel' | translate"
+    (click)="close()"
+  >
+    <img src="/brand/SubegIA.svg" alt="" width="45" height="45" />
+    <span class="title">Subeg<span class="accent">IA</span></span>
+  </a>
+
+  <div class="headerRight">
+    <div class="navbarContainer" id="mainMenu" [class.open]="menuOpen()">
+      <nav class="navbarInner" aria-label="Main">
+        <a href="#explore" (click)="close()">{{ 'header.nav.explore' | translate }}</a>
+        <a href="#project" (click)="close()">{{ 'header.nav.project' | translate }}</a>
+        <a href="#howWorks" (click)="close()">{{ 'header.nav.howItWorks' | translate }}</a>
+        <a href="#limitations" (click)="close()">{{ 'header.nav.limitations' | translate }}</a>
+      </nav>
+    </div>
+
+    <div class="headerActions">
+      <div
+        class="languageOptions"
+        role="group"
+        [attr.aria-label]="'header.language.label' | translate"
+        [style.--index]="selectedIndex()"
+      >
+        @for (lang of languages; track lang) {
+          <button
+            type="button"
+            class="languageButton"
+            [class.selected]="selectedLanguage() === lang"
+            [attr.aria-pressed]="selectedLanguage() === lang"
+            [attr.lang]="lang"
+            [attr.aria-label]="'header.language.' + lang | translate"
+            (click)="updateLanguage(lang)"
+          >
+            {{ lang.toUpperCase() }}
+          </button>
+        }
+      </div>
+
+      <button
+        type="button"
+        class="burger"
+        aria-controls="mainMenu"
+        [attr.aria-expanded]="menuOpen()"
+        [attr.aria-label]="'header.menuToggle' | translate"
+        (click)="toggle()"
+      >
+        <span></span>
+      </button>
+    </div>
+  </div>
+</div>

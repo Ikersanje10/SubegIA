@@ -1,1 +1,64 @@
 /* You can add global styles to this file, and also import other style files */
+@import '@fontsource-variable/inter';
+
+:root {
+  /* backgrounds and surfaces */
+  --bg-base: #101713;
+  --bg-alternate: #151e18;
+  --surface-panel: #1b2620;
+  --surface-raised: #25362a;
+
+  /* text */
+  --text-primary: #f0f2eb;
+  --text-secondary: #b9c4b7;
+  --text-on-accent: #172013;
+
+  /* brand */
+  --accent: #b9d3a2;
+  --accent-opacity: #b9d3a290;
+
+  /* borders */
+  --border-subtle: #3b4d40;
+  --border-control: #617560;
+
+  /* warning notice */
+  --warning-bg: #302d20;
+  --warning-border: #675c38;
+  --warning-text: #f2d397;
+
+  /* FWI scale */
+  --fwi-bajo: #7bb998;
+  --fwi-moderado: #d6ca68;
+  --fwi-alto: #e9a650;
+  --fwi-muy-alto: #db7a50;
+  --fwi-extremo: #c95c68;
+  --fwi-muy-extremo: #915c83;
+
+  /* Font */
+  --font-sans: 'Inter Variable', 'Segoe UI', sans-serif;
+  --fontWeight-regular: 400;
+  --fontWeight-medium: 500;
+  --fontWeight-semiBold: 600;
+  --fontWeight-bold: 700;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

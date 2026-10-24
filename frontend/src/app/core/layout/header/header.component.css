@@ -1,0 +1,311 @@
+/* =========================================================
+   Header
+   Mobile first: base styles, then tablet, then desktop.
+   Note: media queries can't use variables, so the desktop
+   breakpoint (1024px) is written in the queries below.
+   ========================================================= */
+
+.header {
+  --radius-pill: 999px;
+
+  position: relative; /* the mobile dropdown is positioned against this */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem; /* was 0.75rem 1rem */
+}
+
+/* Right side: links + language + burger.
+   Don't make this position: relative, or the mobile dropdown
+   would be as wide as this box instead of the full header. */
+.headerRight {
+  display: flex;
+  align-items: center;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* ---------- Logo ---------- */
+
+.titleContainer {
+  display: flex;
+  align-items: center;
+  column-gap: 8px;
+  text-decoration: none;
+}
+
+.title {
+  color: var(--text-primary);
+  font-weight: var(--fontWeight-bold);
+  font-size: 1.3rem;
+  white-space: nowrap; /* the title never wraps onto two lines */
+}
+
+.accent {
+  color: var(--accent);
+}
+
+/* ---------- Navigation links (mobile dropdown) ---------- */
+
+.navbarContainer {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding-inline: 1.25rem; /* horizontal only, so the closed state collapses to 0 */
+  background: var(--surface-panel);
+
+  /* height animation: 0fr (closed) -> 1fr (content height) */
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.3s ease,
+    visibility 0.3s;
+}
+
+.navbarContainer.open {
+  grid-template-rows: 1fr;
+  visibility: visible;
+}
+
+.navbarInner {
+  min-height: 0; /* lets the grid row shrink to 0 */
+  overflow: hidden; /* hides the links while collapsed */
+  display: flex;
+  flex-direction: column;
+}
+
+.navbarInner a {
+  padding: 0.9rem 0.25rem; /* spacing + bigger tap area; side padding keeps the focus ring inside */
+  color: var(--text-secondary);
+  text-decoration: none;
+  outline-offset: -2px; /* inside the box, so overflow: hidden doesn't clip it */
+}
+
+/* ---------- Language selector ---------- */
+
+.languageOptions {
+  --padding: 3px;
+
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* equal-width buttons */
+  padding: var(--padding);
+  border-radius: var(--radius-pill);
+}
+
+/* the sliding pill */
+.languageOptions::before {
+  content: '';
+  position: absolute;
+  top: var(--padding);
+  bottom: var(--padding);
+  left: var(--padding);
+  width: calc((100% - 2 * var(--padding)) / 3);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  transform: translateX(calc(var(--index) * 100%));
+  transition: transform 0.25s ease;
+}
+
+.languageButton {
+  position: relative;
+  z-index: 1; /* above the pill */
+  font-size: 0.8rem;
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent; /* the pill is the background */
+  color: var(--text-primary);
+  font-weight: var(--fontWeight-bold);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- Burger button ---------- */
+
+.burger {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* three bars: ::before (top), span (middle), ::after (bottom) */
+.burger span,
+.burger::before,
+.burger::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease,
+    top 0.2s ease;
+}
+
+.burger::before {
+  top: 14px;
+}
+.burger span {
+  top: 21px;
+}
+.burger::after {
+  top: 28px;
+}
+
+/* open state: the bars turn into an X */
+.burger[aria-expanded='true']::before {
+  top: 21px;
+  transform: rotate(45deg);
+}
+.burger[aria-expanded='true'] span {
+  opacity: 0;
+}
+.burger[aria-expanded='true']::after {
+  top: 21px;
+  transform: rotate(-45deg);
+}
+
+/* ---------- Keyboard focus ---------- */
+
+.titleContainer:focus-visible,
+.languageButton:focus-visible,
+.burger:focus-visible,
+.navbarInner a:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
+/* =========================================================
+   Larger phones and up: normal sizes
+   ========================================================= */
+
+@media (min-width: 480px) {
+  .header {
+    padding: 0.75rem 1rem;
+  }
+
+  .headerActions {
+    gap: 0.75rem;
+  }
+
+  .titleContainer {
+    column-gap: 10px;
+  }
+
+  .titleContainer img {
+    width: 45px;
+    height: 45px;
+  }
+
+  .title {
+    font-size: 1.6rem;
+  }
+
+  .languageButton {
+    padding: 0.4rem 0.9rem;
+    font-size: 1rem;
+  }
+}
+
+/* =========================================================
+   Tablet: still the dropdown, but the links sit in a row
+   ========================================================= */
+
+@media (min-width: 600px) {
+  .navbarInner {
+    flex-direction: row;
+    flex-wrap: wrap;
+    column-gap: 2rem;
+  }
+}
+
+/* =========================================================
+   Desktop: links inline, next to the language selector
+   ========================================================= */
+
+@media (min-width: 1024px) {
+  .burger {
+    display: none;
+  }
+
+  .headerRight {
+    gap: 2rem; /* space between links and language selector */
+  }
+
+  .navbarContainer {
+    position: static;
+    display: block;
+    visibility: visible;
+    padding: 0;
+    background: none;
+    transition: none;
+  }
+
+  .navbarInner {
+    overflow: visible;
+    flex-wrap: nowrap;
+    column-gap: 1.5rem;
+  }
+
+  .navbarInner a {
+    position: relative;
+    padding: 0.4rem 0;
+    outline-offset: 2px;
+  }
+
+  /* animated underline */
+  .navbarInner a::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 1px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s ease;
+  }
+
+  .navbarInner a:hover,
+  .navbarInner a:focus-visible {
+    color: var(--text-primary);
+  }
+
+  .navbarInner a:hover::after,
+  .navbarInner a:focus-visible::after {
+    transform: scaleX(1);
+  }
+}
+
+/* =========================================================
+   Reduced motion
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .navbarContainer,
+  .languageOptions::before,
+  .burger span,
+  .burger::before,
+  .burger::after,
+  .navbarInner a::after {
+    transition: none;
+  }
+}

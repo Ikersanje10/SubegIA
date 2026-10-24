@@ -1,3 +1,19 @@
 {
-    "app.hello": "Kaixo"
+    "header": {
+        "logoLabel": "SubegIA, hasierara itzuli",
+        "menuToggle": "Menua ireki edo itxi",
+        "nav": {
+            "label": "Nagusia",
+            "explore": "Arakatu",
+            "project": "Proiektua",
+            "howItWorks": "Nola funtzionatzen du",
+            "limitations": "Mugak"
+        },
+        "language": {
+            "label": "Hizkuntza",
+            "es": "Gaztelania",
+            "en": "Ingelesa",
+            "eu": "Euskara"
+        }
+    }
 }
