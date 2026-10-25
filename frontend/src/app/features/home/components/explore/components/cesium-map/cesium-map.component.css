@@ -1,0 +1,233 @@
+:host {
+  display: block;
+}
+
+.cesium-map {
+  position: relative;
+}
+
+.fullScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100vw;
+  height: 100dvh;
+}
+
+.map {
+  height: 65vh;
+  min-height: 60vh;
+}
+
+.map-expanded {
+  height: 100vh;
+}
+
+.mapHeadline {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 9;
+  width: 14.125rem;
+  max-width: calc(100% - 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  background-color: var(--surface-panel);
+  border: 1px solid var(--border-control);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.mapLocation {
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: var(--fontWeight-bold);
+  line-height: 1.25;
+}
+
+.mapMessage {
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  font-weight: var(--fontWeight-bold);
+  line-height: 1.2;
+}
+
+.exploreMapContainer {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 3rem; /* leaves the Cesium credits visible */
+  z-index: 10;
+
+  width: auto;
+  max-width: 28rem;
+  margin-inline: auto; /* centers it when there's room */
+  box-sizing: border-box;
+  max-height: calc(100% - 4rem); /* never taller than the map */
+  overflow-y: auto;
+
+  display: flex;
+  flex-direction: column;
+  row-gap: 0.75rem;
+  padding: 1rem;
+  background-color: var(--surface-panel);
+  border: 1px solid var(--border-control);
+  border-radius: 10px;
+}
+
+.textContainer {
+  display: flex;
+  flex-direction: column;
+  row-gap: 0.5rem;
+}
+
+.title {
+  color: var(--accent);
+  font-weight: var(--fontWeight-medium);
+}
+
+.description {
+  color: var(--text-secondary);
+  font-weight: var(--fontWeight-regular);
+  font-size: 0.9rem;
+}
+
+.toggleMapInteraction {
+  padding: 0.75rem;
+  min-height: 44px; /* comfortable tap target */
+  background-color: var(--accent);
+  border-radius: 10px;
+  border: none;
+  color: var(--text-on-accent);
+  font-weight: var(--fontWeight-semiBold);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.toggleMapInteraction:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+.hidden {
+  display: none;
+}
+
+.mapControls {
+  position: absolute;
+  top: 5px;
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  right: 1rem;
+  z-index: 10;
+
+  width: auto;
+  max-width: 28rem;
+  margin-inline: auto; /* centers it when there's room */
+  box-sizing: border-box;
+  overflow-y: auto;
+
+  padding: 1rem;
+  background-color: var(--surface-panel);
+  border: 1px solid var(--border-control);
+  border-radius: 10px;
+}
+
+.controlButtonsContainer {
+  display: flex;
+  justify-content: space-between;
+}
+
+.controlButtonsContainer button {
+  padding: 10px 20px;
+  border-radius: 10px;
+}
+
+.drawArea {
+  background-color: var(--accent);
+  border: 1 px solid var(--border-subtle);
+  color: var(--text-on-accent);
+  font-weight: var(--fontWeight-semiBold);
+}
+
+.closeMap {
+  background-color: var(--surface-raised);
+  border: 1px solid var(--border-control);
+  color: var(--text-primary);
+  font-weight: var(--fontWeight-medium);
+}
+
+.mapControls > p {
+  margin-top: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: var(--fontWeight-regular);
+}
+
+.drawingPanel {
+  max-height: calc(100dvh - 2rem);
+}
+
+.drawingActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.drawingPanel button {
+  min-height: 44px;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.drawingPanel button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.drawingPanel button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mapExampleControls {
+  position: absolute;
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 2rem;
+  z-index: 10;
+
+  width: auto;
+  max-width: 28rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+
+  padding: 1rem;
+}
+
+.mapExampleControlsButton {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border-control);
+  background-color: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.mapExampleControlsButton:nth-child(2) {
+  margin-left: 10px;
+  border: none;
+  color: var(--text-on-accent);
+  font-weight: var(--fontWeight-semiBold);
+  background-color: var(--accent);
+}
+
+.mapExampleControlsButton:nth-child(3) {
+  margin-top: 10px;
+}

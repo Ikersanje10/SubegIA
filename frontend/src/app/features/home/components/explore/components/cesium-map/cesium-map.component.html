@@ -1,0 +1,61 @@
+<section class="cesium-map" [class.fullScreen]="interactive()">
+  <div #cesium class="map" [class.map-expanded]="interactive()"></div>
+  <div class="mapHeadline" [class.hidden]="interactive()">
+    <p class="mapLocation">Gipuzkoa / Arrasate</p>
+    <h2 class="mapMessage">El tiempo es el protagonista</h2>
+  </div>
+  <div class="exploreMapContainer" [class.hidden]="interactive()">
+    <div class="textContainer">
+      <p class="title">Mapa interactivo</p>
+      <p class="description">
+        Desliza para seguir leyendo. Activa el mapa para moverlo o dibujar una seleccion
+      </p>
+    </div>
+    <button
+      #exploreButton
+      class="toggleMapInteraction"
+      (click)="toggleInteraction()"
+      [attr.is-pressed]="interactive()"
+    >
+      Explorar Mapa
+    </button>
+  </div>
+  <div class="mapControls" [class.hidden]="!interactive() || drawing()">
+    <div class="controlButtonsContainer">
+      <button #drawButton class="drawArea" (click)="drawArea()">Dibujar area</button>
+      <button class="closeMap" (click)="toggleInteraction()">Cerrar mapa</button>
+    </div>
+    <p>Explora el terreno con gestos. Dibuja un area cuando estes listo.</p>
+  </div>
+
+  <div class="mapControls drawingPanel" [class.hidden]="!interactive() || !drawing()">
+    <button #drawingCloseButton class="closeMap" (click)="toggleInteraction()">Cerrar mapa</button>
+    <div class="drawingActions">
+      <button class="closeMap" (click)="undoDrawingPoint()" [disabled]="pointCount() === 0">
+        Deshacer
+      </button>
+      <button class="closeMap" (click)="finishDrawing()" [disabled]="!canFinishDrawing()">
+        Finalizar
+      </button>
+      <button class="closeMap" (click)="cancelDrawing()">Cancelar</button>
+    </div>
+    <p role="status" aria-live="polite" aria-atomic="true">
+      {{ pointCount() }} esquinas. Selecciona al menos 3 puntos sobre el mapa para crear el area.
+      Puedes deshacer, finalizar o cancelar.
+    </p>
+    <p>Boceto sin validacion geografica.</p>
+    @if (drawingMessage()) {
+      <p role="alert">{{ drawingMessage() }}</p>
+    }
+  </div>
+
+  <div class="mapExampleControls" [class.hidden]="!interactive() || drawing()">
+    <button class="mapExampleControlsButton">Centrar terreno</button>
+    <button class="mapExampleControlsButton" (click)="showExampleArea()">
+      Ver area de ejemplo
+    </button>
+    <button class="mapExampleControlsButton" (click)="toggleHeatMap()">
+      {{ hiddeHeatMap() ? 'Mostrar heatmap' : 'Ocultar heatmap' }}
+    </button>
+  </div>
+</section>

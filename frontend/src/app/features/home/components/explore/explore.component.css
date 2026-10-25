@@ -1,4 +1,5 @@
-.map {
-  width: 100%;
-  height: 70vh; /* Cesium needs a container with a real height */
+.explore {
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 1rem;
 }
