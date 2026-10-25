@@ -2,16 +2,26 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.4.
 
+## Map rendering
+
+Cesium uses on-demand rendering (`requestRenderMode`) with a fixed simulation
+clock. Camera movement, tile loading and viewport resizing trigger Cesium's
+normal render requests; heatmap visibility, drawing edits and asynchronously
+added buildings explicitly request a frame. A settled scene does not redraw
+continuously while the user reads or scrolls the page. Terrain, imagery,
+resolution and visual quality are unchanged.
+
 ## Example information panel
 
-The explore view displays the information panel directly below the map. It uses the
+The explore view displays the information panel below the map on phones and
+alongside it from 800 CSS pixels upward. It uses the
 shared Bosque mineral palette and ES/EN/EU translations from `public/i18n`.
 The C2 cell, FWI value of 27.4 and High category are static design examples, not
 map-selection results or calculated assessments. The panel includes map context,
 Figma design notes, safety warnings and an in-page limitations link. Terrain and
 imagery still come from the existing Cesium viewer's external services.
 
-During fullscreen exploration, the map takes the space above a bottom conditions
+During fullscreen exploration below 800 CSS pixels, the map takes the space above a bottom conditions
 button (normally a 90/10 viewport split, with a minimum touch-friendly bar height).
 The collapsed sheet is a rounded, full-width text toggle. Opening it grows the
 sheet to at most 80% of the viewport, with "Hide conditions" at the top and the
@@ -25,6 +35,20 @@ disable these transitions; closed content is inert and hidden from assistive tec
 explore component without duplicating it or recreating the viewer. Escape closes
 the sheet and returns focus to the button without scrolling. Drawing closes and disables the sheet,
 and leaving exploration resets it.
+
+Global styles lock page scrolling while the map has its `fullScreen` class,
+without disabling the information panel's internal scrolling. Closing the map or
+removing its component automatically releases the lock.
+
+At 800 CSS pixels and above, exploration keeps the same panel visible in the
+right-hand column, without a conditions toggle or bottom-sheet animation.
+The map fills the left column's height. Crossing the breakpoint resets the sheet
+to its collapsed state and moves focus out of controls/content that become hidden.
+
+The example FWI legend is hidden on phones and displayed from the 800 CSS-pixel
+media query. Its six labelled swatches use the map's category colors and include
+an explicit fictitious-cell notice. It hides during drawing or when the heatmap
+is hidden, and sits clear of the example controls during fullscreen exploration.
 
 ## Project section and navigation
 

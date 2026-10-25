@@ -5,6 +5,8 @@ import * as Cesium from 'cesium';
 import { CesiumMapComponent } from './cesium-map.component';
 import { createExampleCells, EXAMPLE_AREA_COORDINATES, type Coordinate } from './example-area';
 import es from '../../../../../../../../public/i18n/es.json';
+import en from '../../../../../../../../public/i18n/en.json';
+import eu from '../../../../../../../../public/i18n/eu.json';
 
 describe('CesiumMapComponent', () => {
   const initializeMap = CesiumMapComponent.prototype['initMap'];
@@ -12,6 +14,7 @@ describe('CesiumMapComponent', () => {
   let fixture: ComponentFixture<CesiumMapComponent>;
 
   beforeEach(async () => {
+    vi.stubGlobal('innerWidth', 799);
     CesiumMapComponent.prototype['initMap'] = async () => undefined;
     await TestBed.configureTestingModule({
       imports: [CesiumMapComponent],
@@ -26,6 +29,7 @@ describe('CesiumMapComponent', () => {
 
   afterEach(() => {
     CesiumMapComponent.prototype['initMap'] = initializeMap;
+    vi.unstubAllGlobals();
   });
 
   it('should create', () => {
@@ -130,15 +134,130 @@ describe('CesiumMapComponent', () => {
       expect(toggle().disabled).toBe(false);
       expect(panel().classList.contains('conditions-hidden')).toBe(true);
     });
+
+    it('keeps conditions visible as an aside at 800px, including while drawing', async () => {
+      vi.stubGlobal('innerWidth', 800);
+      window.dispatchEvent(new Event('resize'));
+      component.toggleInteraction();
+      await fixture.whenStable();
+
+      expect(toggle()).toBeNull();
+      expect(panel().parentElement?.classList.contains('sheet-fullscreen')).toBe(false);
+      expect(panel().classList.contains('conditions-hidden')).toBe(false);
+      expect(panel().hasAttribute('inert')).toBe(false);
+      expect(panel().hasAttribute('aria-hidden')).toBe(false);
+      component.toggleConditions();
+      expect(component.conditionsOpen()).toBe(false);
+
+      component.drawArea();
+      await fixture.whenStable();
+      expect(panel().hasAttribute('inert')).toBe(false);
+      expect(panel().classList.contains('conditions-hidden')).toBe(false);
+    });
+
+    it('switches between the aside and a collapsed sheet without recreating the panel', async () => {
+      component.toggleInteraction();
+      component.toggleConditions();
+      await fixture.whenStable();
+      const originalPanel = panel();
+      toggle().focus();
+
+      vi.stubGlobal('innerWidth', 800);
+      window.dispatchEvent(new Event('resize'));
+      await fixture.whenStable();
+
+      expect(panel()).toBe(originalPanel);
+      expect(component.conditionsOpen()).toBe(false);
+      expect(toggle()).toBeNull();
+      expect(document.activeElement).toBe(panel());
+
+      vi.stubGlobal('innerWidth', 799);
+      window.dispatchEvent(new Event('resize'));
+      await fixture.whenStable();
+
+      expect(panel()).toBe(originalPanel);
+      expect(panel().hasAttribute('inert')).toBe(true);
+      expect(toggle().getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(toggle());
+    });
+
+    it('moves focus to drawing controls when the aside becomes hidden during drawing', async () => {
+      vi.stubGlobal('innerWidth', 800);
+      window.dispatchEvent(new Event('resize'));
+      component.toggleInteraction();
+      component.drawArea();
+      await fixture.whenStable();
+      panel().focus();
+
+      vi.stubGlobal('innerWidth', 799);
+      window.dispatchEvent(new Event('resize'));
+      await fixture.whenStable();
+
+      expect(panel().hasAttribute('inert')).toBe(true);
+      expect(toggle().disabled).toBe(true);
+      expect(document.activeElement).toBe(
+        fixture.nativeElement.querySelector('.drawingPanel .closeMap'),
+      );
+    });
   });
 
-  it('should display the location and headline above the map', () => {
+  it('only includes functional example controls', () => {
+    const element: HTMLElement = fixture.nativeElement;
+    const buttons = element.querySelectorAll('.mapExampleControls button');
+
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0].textContent?.trim()).toBe('Ver area de ejemplo');
+    expect(buttons[1].textContent?.trim()).toBe('Ocultar heatmap');
+    expect(element.textContent).not.toContain('Centrar terreno');
+  });
+
+  it('shows six ordered legend swatches matching the example map colors in every language', async () => {
+    const translate = TestBed.inject(TranslateService);
+    const element: HTMLElement = fixture.nativeElement;
+    for (const [language, translations] of Object.entries({ es, en, eu })) {
+      translate.setTranslation(language, translations);
+      translate.use(language);
+      await fixture.whenStable();
+      expect(element.querySelector('#fwi-legend-title')?.textContent)
+        .toBe(translations.mapLegend.title);
+      const swatches = element.querySelectorAll<HTMLLIElement>('.legend-scale li');
+      expect(swatches).toHaveLength(6);
+      component.dangerLevels.forEach((level, index) => {
+        expect(swatches[index].getAttribute('aria-label')).toBe(translations.mapLegend.levels[level]);
+        expect(swatches[index].title).toBe(translations.mapLegend.levels[level]);
+        const expected = document.createElement('span');
+        expected.style.backgroundColor = component.colors[level];
+        expect(swatches[index].style.backgroundColor).toBe(expected.style.backgroundColor);
+      });
+      expect(element.querySelector('.legend-range')?.textContent).toContain(translations.mapLegend.lower);
+      expect(element.querySelector('.legend-range')?.textContent).toContain(translations.mapLegend.higher);
+      expect(element.querySelector('.fwi-legend > p')?.textContent).toBe(translations.mapLegend.notice);
+    }
+  });
+
+  it('hides the legend when the heatmap is hidden or an area is being drawn', async () => {
+    const element: HTMLElement = fixture.nativeElement;
+    const legend = element.querySelector('.fwi-legend');
+    expect(legend?.classList.contains('hidden')).toBe(false);
+    component.toggleHeatMap();
+    await fixture.whenStable();
+    expect(legend?.classList.contains('hidden')).toBe(true);
+    component.toggleHeatMap();
+    component.toggleInteraction();
+    component.drawArea();
+    await fixture.whenStable();
+    expect(legend?.classList.contains('hidden')).toBe(true);
+    component.cancelDrawing();
+    await fixture.whenStable();
+    expect(legend?.classList.contains('hidden')).toBe(false);
+  });
+
+  it('keeps the decorative headline and fixed location label off the map', () => {
     const element: HTMLElement = fixture.nativeElement;
 
-    expect(element.querySelector('.mapLocation')?.textContent).toBe('Gipuzkoa / Arrasate');
-    expect(element.querySelector('h2.mapMessage')?.textContent).toBe(
-      'El tiempo es el protagonista',
-    );
+    expect(element.querySelector('.mapHeadline')).toBeNull();
+    expect(element.textContent).not.toContain('Gipuzkoa / Arrasate');
+    expect(element.textContent).not.toContain('El tiempo es el protagonista');
   });
 
   it('should hide the panels and show the controls when map interaction is enabled', async () => {
@@ -150,7 +269,6 @@ describe('CesiumMapComponent', () => {
 
     expect(component.interactive()).toBe(true);
     expect(element.querySelector('.exploreMapContainer')?.classList.contains('hidden')).toBe(true);
-    expect(element.querySelector('.mapHeadline')?.classList.contains('hidden')).toBe(true);
     expect(element.querySelector('.mapControls')?.classList.contains('hidden')).toBe(false);
   });
 
@@ -343,6 +461,84 @@ describe('CesiumMapComponent', () => {
     expect(cell.isShowing).toBe(true);
   });
 
+  describe('on-demand rendering', () => {
+    const positions = [
+      Cesium.Cartesian3.fromDegrees(-2.49, 43.08),
+      Cesium.Cartesian3.fromDegrees(-2.48, 43.08),
+      Cesium.Cartesian3.fromDegrees(-2.48, 43.09),
+    ];
+    let requestRender: ReturnType<typeof vi.fn>;
+    let isDestroyed: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      requestRender = vi.fn();
+      isDestroyed = vi.fn().mockReturnValue(false);
+      Object.defineProperty(component, 'viewer', {
+        value: {
+          scene: {
+            requestRender,
+            screenSpaceCameraController: { enableInputs: false },
+            canvas: document.createElement('canvas'),
+          },
+          isDestroyed,
+          destroy: vi.fn(),
+        },
+        writable: true,
+      });
+      component['Cesium'] = Cesium;
+      component['drawingSource'] = new Cesium.CustomDataSource('test-on-demand');
+      component['exampleArea'] = component['createExampleArea'](Cesium);
+    });
+
+    it('requests a frame when changing heatmap visibility and entering or leaving exploration', () => {
+      for (const action of [
+        () => component.toggleHeatMap(),
+        () => component.toggleInteraction(),
+        () => component.toggleInteraction(),
+      ]) {
+        requestRender.mockClear();
+        action();
+        expect(requestRender).toHaveBeenCalledOnce();
+      }
+    });
+
+    it('requests frames for draft creation, each point, undo, finishing and cancellation', () => {
+      component.toggleInteraction();
+      requestRender.mockClear();
+      component.drawArea();
+      expect(requestRender).toHaveBeenCalledOnce();
+
+      for (const point of positions) {
+        requestRender.mockClear();
+        component['addDrawingPoint'](point);
+        expect(requestRender).toHaveBeenCalledOnce();
+      }
+
+      requestRender.mockClear();
+      component.undoDrawingPoint();
+      expect(requestRender).toHaveBeenCalledOnce();
+      component['addDrawingPoint'](positions[2]);
+      requestRender.mockClear();
+      component.finishDrawing();
+      expect(requestRender).toHaveBeenCalledOnce();
+      expect(component['drawingSource']?.entities.getById('drawn-area')).toBeDefined();
+
+      component.drawArea();
+      requestRender.mockClear();
+      component.cancelDrawing();
+      expect(requestRender).toHaveBeenCalledOnce();
+    });
+
+    it('does not render in response to invalid drawing actions or after viewer destruction', () => {
+      component.undoDrawingPoint();
+      component['addDrawingPoint'](positions[0]);
+      expect(requestRender).not.toHaveBeenCalled();
+      isDestroyed.mockReturnValue(true);
+      component.toggleHeatMap();
+      expect(requestRender).not.toHaveBeenCalled();
+    });
+  });
+
   describe('drawing an area', () => {
     let source: Cesium.CustomDataSource;
     let exampleArea: Cesium.Entity;
@@ -505,7 +701,7 @@ describe('CesiumMapComponent', () => {
       const pick = vi.fn().mockReturnValue(positions[0]);
       const viewer = {
         camera: { getPickRay: vi.fn().mockReturnValue(ray) },
-        scene: { globe: { pick } },
+        scene: { globe: { pick }, requestRender: vi.fn() },
         isDestroyed: () => false,
         destroy: vi.fn(),
       };

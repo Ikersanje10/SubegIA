@@ -58,6 +58,12 @@ body {
   font-family: var(--font-sans);
 }
 
+html:has(app-cesium-map .fullScreen),
+body:has(app-cesium-map .fullScreen) {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 .map-credits .cesium-widget-credits {
   position: static;
 }

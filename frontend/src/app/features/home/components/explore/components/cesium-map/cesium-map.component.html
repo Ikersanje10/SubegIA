@@ -2,10 +2,27 @@
   <div class="map-viewport">
     <div #cesium class="map" [class.map-expanded]="interactive()"></div>
     <div #mapCredits class="map-credits"></div>
-    <div class="mapHeadline" [class.hidden]="interactive()">
-      <p class="mapLocation">Gipuzkoa / Arrasate</p>
-      <h2 class="mapMessage">El tiempo es el protagonista</h2>
-    </div>
+    <aside
+      class="fwi-legend"
+      [class.hidden]="drawing() || hiddeHeatMap()"
+      aria-labelledby="fwi-legend-title"
+    >
+      <h3 id="fwi-legend-title">{{ 'mapLegend.title' | translate }}</h3>
+      <ul class="legend-scale" role="list">
+        @for (level of dangerLevels; track level) {
+          <li
+            [style.background-color]="colors[level]"
+            [attr.aria-label]="'mapLegend.levels.' + level | translate"
+            [attr.title]="'mapLegend.levels.' + level | translate"
+          ></li>
+        }
+      </ul>
+      <div class="legend-range">
+        <span>{{ 'mapLegend.lower' | translate }}</span>
+        <span>{{ 'mapLegend.higher' | translate }}</span>
+      </div>
+      <p>{{ 'mapLegend.notice' | translate }}</p>
+    </aside>
     <div class="exploreMapContainer" [class.hidden]="interactive()">
       <div class="textContainer">
         <p class="title">Mapa interactivo</p>
@@ -57,11 +74,10 @@
       class="mapExampleControls"
       [class.hidden]="!interactive() || drawing()"
     >
-      <button class="mapExampleControlsButton">Centrar terreno</button>
-      <button class="mapExampleControlsButton" (click)="showExampleArea()">
+      <button class="mapExampleControlsButton example-area-button" (click)="showExampleArea()">
         Ver area de ejemplo
       </button>
-      <button class="mapExampleControlsButton" (click)="toggleHeatMap()">
+      <button class="mapExampleControlsButton heatmap-button" (click)="toggleHeatMap()">
         {{ hiddeHeatMap() ? 'Mostrar heatmap' : 'Ocultar heatmap' }}
       </button>
     </div>
@@ -69,10 +85,10 @@
 
   <div
     class="conditions-sheet"
-    [class.sheet-fullscreen]="interactive()"
-    [class.sheet-open]="conditionsOpen()"
+    [class.sheet-fullscreen]="useBottomSheet()"
+    [class.sheet-open]="useBottomSheet() && conditionsOpen()"
   >
-    @if (interactive()) {
+    @if (useBottomSheet()) {
       <button
         #conditionsButton
         type="button"
@@ -90,10 +106,10 @@
       #conditionsPanel
       id="map-conditions"
       class="conditions-panel"
-      [class.conditions-expanded]="interactive()"
-      [class.conditions-hidden]="interactive() && (!conditionsOpen() || drawing())"
-      [attr.inert]="interactive() && (!conditionsOpen() || drawing()) ? '' : null"
-      [attr.aria-hidden]="interactive() && (!conditionsOpen() || drawing()) ? 'true' : null"
+      [class.conditions-expanded]="useBottomSheet()"
+      [class.conditions-hidden]="useBottomSheet() && (!conditionsOpen() || drawing())"
+      [attr.inert]="useBottomSheet() && (!conditionsOpen() || drawing()) ? '' : null"
+      [attr.aria-hidden]="useBottomSheet() && (!conditionsOpen() || drawing()) ? 'true' : null"
       tabindex="-1"
     >
       <ng-content></ng-content>

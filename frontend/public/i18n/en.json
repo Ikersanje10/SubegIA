@@ -1,4 +1,18 @@
 {
+    "mapLegend": {
+        "title": "Example FWI",
+        "lower": "Lower danger",
+        "higher": "Higher danger",
+        "notice": "Fictitious cells, not weather-data resolution.",
+        "levels": {
+            "low": "Low",
+            "moderate": "Moderate",
+            "high": "High",
+            "veryHigh": "Very high",
+            "extreme": "Extreme",
+            "veryExtreme": "Very extreme"
+        }
+    },
     "mapConditions": {
         "show": "View example conditions",
         "hide": "Hide conditions"

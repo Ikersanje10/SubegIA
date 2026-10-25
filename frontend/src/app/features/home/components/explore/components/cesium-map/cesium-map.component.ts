@@ -11,6 +11,7 @@ import { createExampleCells, EXAMPLE_AREA_COORDINATES, type Danger, type Example
   templateUrl: './cesium-map.component.html',
   host: {
     '(keydown.escape)': 'closeConditions($event)',
+    '(window:resize)': 'updateLayout()',
   },
 })
 export class CesiumMapComponent implements OnDestroy {
@@ -37,12 +38,39 @@ export class CesiumMapComponent implements OnDestroy {
   readonly canFinishDrawing = computed(() => this.pointCount() >= 3);
   readonly drawingMessage = signal('');
   readonly conditionsOpen = signal(false);
+  readonly wideLayout = signal(false);
+  readonly useBottomSheet = computed(() => this.interactive() && !this.wideLayout());
 
   hiddeHeatMap: WritableSignal<boolean> = signal(false);
   interactive: WritableSignal<boolean> = signal(false);
 
   constructor() {
-    afterNextRender(() => this.initMap());
+    afterNextRender(() => {
+      this.updateLayout();
+      this.initMap();
+    });
+  }
+
+  updateLayout() {
+    const wide = window.innerWidth >= 800;
+    if (wide === this.wideLayout()) return;
+
+    const panel = this.conditionsPanel();
+    const button = this.conditionsButton();
+    const activeElement = document.activeElement;
+    const focusInPanel = activeElement !== null && panel?.nativeElement.contains(activeElement);
+    const focusOnButton = activeElement === button?.nativeElement;
+    this.wideLayout.set(wide);
+    this.conditionsOpen.set(false);
+
+    if (this.interactive() && (focusInPanel || focusOnButton)) {
+      afterNextRender(() => {
+        const target = wide
+          ? this.conditionsPanel()
+          : this.drawing() ? this.drawingCloseButton() : this.conditionsButton();
+        target?.nativeElement.focus({ preventScroll: true });
+      }, { injector: this.injector });
+    }
   }
 
   toggleHeatMap() {
@@ -50,6 +78,7 @@ export class CesiumMapComponent implements OnDestroy {
     if (this.exampleArea) {
       this.exampleArea.show = !this.hiddeHeatMap() && !this.drawing();
     }
+    this.requestMapRender();
   }
 
   toggleInteraction() {
@@ -61,7 +90,7 @@ export class CesiumMapComponent implements OnDestroy {
   }
 
   toggleConditions() {
-    if (!this.interactive() || this.drawing()) return;
+    if (!this.useBottomSheet() || this.drawing()) return;
     if (this.conditionsOpen()) {
       this.closeConditions();
       return;
@@ -85,6 +114,7 @@ export class CesiumMapComponent implements OnDestroy {
     this.drawing.set(true);
     if (this.exampleArea) this.exampleArea.show = false;
     this.createDraft();
+    this.requestMapRender();
     this.focusAfterRender(this.drawingCloseButton());
   }
 
@@ -94,6 +124,7 @@ export class CesiumMapComponent implements OnDestroy {
     const vertex = this.vertexEntities.pop();
     if (vertex) this.drawingSource?.entities.remove(vertex);
     this.drawingMessage.set('');
+    this.requestMapRender();
   }
 
   finishDrawing() {
@@ -131,6 +162,7 @@ export class CesiumMapComponent implements OnDestroy {
     this.drawingMessage.set('');
     this.drawing.set(false);
     if (this.exampleArea) this.exampleArea.show = !this.hiddeHeatMap();
+    this.requestMapRender();
     this.focusAfterRender(this.drawButton());
   }
 
@@ -206,6 +238,7 @@ export class CesiumMapComponent implements OnDestroy {
         disableDepthTestDistance: Number.POSITIVE_INFINITY,
       },
     }));
+    this.requestMapRender();
   }
 
   showExampleArea() {
@@ -227,9 +260,17 @@ export class CesiumMapComponent implements OnDestroy {
     const enabled = this.interactive();
     viewer.scene.screenSpaceCameraController.enableInputs = enabled;
     viewer.scene.canvas.style.touchAction = enabled ? 'none' : 'pan-y';
+    this.requestMapRender();
+  }
+
+  private requestMapRender() {
+    if (this.viewer && !this.viewer.isDestroyed()) {
+      this.viewer.scene.requestRender();
+    }
   }
 
   readonly cells = createExampleCells();
+  readonly dangerLevels = ['low', 'moderate', 'high', 'veryHigh', 'extreme', 'veryExtreme'] as const;
 
   readonly colors: Record<Danger, string> = {
     low: '#7bb998',
@@ -305,6 +346,9 @@ export class CesiumMapComponent implements OnDestroy {
       const viewer = new Cesium.Viewer(container, {
         creditContainer,
         terrain: Cesium.Terrain.fromWorldTerrain(), // 3D mountains
+        requestRenderMode: true,
+        maximumRenderTimeChange: Number.POSITIVE_INFINITY,
+        shouldAnimate: false,
         animation: false,
         infoBox: false,
         selectionIndicator: false,
@@ -347,6 +391,7 @@ export class CesiumMapComponent implements OnDestroy {
         .then((buildings) => {
           if (this.destroyed || !this.viewer || this.viewer.isDestroyed()) return;
           this.viewer.scene.primitives.add(buildings);
+          this.requestMapRender();
         })
         .catch((error) => console.error('Could not load 3D buildings', error));
 

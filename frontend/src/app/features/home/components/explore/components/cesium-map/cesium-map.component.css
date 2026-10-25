@@ -133,37 +133,6 @@
   background-color: var(--bg-alternate);
 }
 
-.mapHeadline {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  z-index: 9;
-  width: 14.125rem;
-  max-width: calc(100% - 2rem);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.875rem 1rem;
-  background-color: var(--surface-panel);
-  border: 1px solid var(--border-control);
-  border-radius: 10px;
-  pointer-events: none;
-}
-
-.mapLocation {
-  color: var(--accent);
-  font-size: 0.8125rem;
-  font-weight: var(--fontWeight-bold);
-  line-height: 1.25;
-}
-
-.mapMessage {
-  color: var(--text-primary);
-  font-size: 1.125rem;
-  font-weight: var(--fontWeight-bold);
-  line-height: 1.2;
-}
-
 .exploreMapContainer {
   position: absolute;
   left: 1rem;
@@ -308,7 +277,6 @@
 
 .mapExampleControls {
   position: absolute;
-  position: absolute;
   left: 1rem;
   right: 1rem;
   bottom: 2rem;
@@ -328,16 +296,110 @@
   border: 1px solid var(--border-control);
   background-color: var(--surface-raised);
   color: var(--text-primary);
+  margin-right: 5px;
 }
 
-.mapExampleControlsButton:nth-child(2) {
-  margin-left: 10px;
+.example-area-button {
   border: none;
   color: var(--text-on-accent);
   font-weight: var(--fontWeight-semiBold);
   background-color: var(--accent);
 }
 
-.mapExampleControlsButton:nth-child(3) {
+.heatmap-button {
   margin-top: 10px;
+}
+
+.fwi-legend {
+  display: none;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9;
+  width: 14.875rem;
+  max-width: calc(100% - 2rem);
+  padding: 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  background: var(--bg-base);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.fwi-legend h3 {
+  color: var(--accent);
+  font-size: 0.6875rem;
+  font-weight: var(--fontWeight-bold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.legend-scale {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  list-style: none;
+}
+
+.legend-scale li {
+  flex: 1;
+  height: 0.5rem;
+  border-radius: 999px;
+}
+
+.legend-range {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.fwi-legend > p {
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 800px) {
+  .fwi-legend:not(.hidden) {
+    display: block;
+  }
+
+  .fullScreen .fwi-legend {
+    top: auto;
+    bottom: 2rem;
+  }
+
+  .fullScreen .mapExampleControls {
+    right: 16.875rem;
+  }
+
+  .cesium-map {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    height: 65vh;
+    max-height: 65vh;
+    position: relative;
+  }
+
+  .cesium-map.fullScreen {
+    height: 100dvh;
+    max-height: none;
+    position: fixed;
+  }
+
+  .cesium-map .map-viewport,
+  .cesium-map .map {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .conditions-sheet {
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    border: none;
+    background-color: transparent;
+  }
+
 }

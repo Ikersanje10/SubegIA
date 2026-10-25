@@ -1,4 +1,18 @@
 {
+    "mapLegend": {
+        "title": "Adibideko FWIa",
+        "lower": "Arrisku txikiagoa",
+        "higher": "Arrisku handiagoa",
+        "notice": "Fikziozko gelaxkak, ez bereizmen meteorologikoa.",
+        "levels": {
+            "low": "Baxua",
+            "moderate": "Moderatua",
+            "high": "Altua",
+            "veryHigh": "Oso altua",
+            "extreme": "Muturrekoa",
+            "veryExtreme": "Oso muturrekoa"
+        }
+    },
     "mapConditions": {
         "show": "Ikusi adibideko baldintzak",
         "hide": "Ezkutatu baldintzak"
