@@ -1,21 +1,28 @@
 import { afterNextRender, Component, computed, ElementRef, inject, Injector, NgZone, OnDestroy, signal, viewChild, WritableSignal } from '@angular/core';
 import type { Cartesian2, Cartesian3, CustomDataSource, Entity, ScreenSpaceEventHandler, Viewer } from 'cesium';
+import { TranslatePipe } from '@ngx-translate/core';
 import { environment } from '../../../../../../../environments/environment';
 import { createExampleCells, EXAMPLE_AREA_COORDINATES, type Danger, type ExampleCell } from './example-area';
 
 @Component({
-  imports: [],
+  imports: [TranslatePipe],
   selector: 'app-cesium-map',
   styleUrl: './cesium-map.component.css',
   templateUrl: './cesium-map.component.html',
+  host: {
+    '(keydown.escape)': 'closeConditions($event)',
+  },
 })
 export class CesiumMapComponent implements OnDestroy {
   private readonly mapEl = viewChild.required<ElementRef<HTMLDivElement>>('cesium');
+  private readonly mapCredits = viewChild.required<ElementRef<HTMLDivElement>>('mapCredits');
   private readonly zone = inject(NgZone);
   private readonly injector = inject(Injector);
   private readonly drawButton = viewChild<ElementRef<HTMLButtonElement>>('drawButton');
   private readonly drawingCloseButton = viewChild<ElementRef<HTMLButtonElement>>('drawingCloseButton');
   private readonly exploreButton = viewChild<ElementRef<HTMLButtonElement>>('exploreButton');
+  private readonly conditionsButton = viewChild<ElementRef<HTMLButtonElement>>('conditionsButton');
+  private readonly conditionsPanel = viewChild<ElementRef<HTMLDivElement>>('conditionsPanel');
   private viewer?: Viewer;
   private destroyed = false;
   private exampleArea?: Entity;
@@ -29,6 +36,7 @@ export class CesiumMapComponent implements OnDestroy {
   readonly pointCount = computed(() => this.drawingPoints().length);
   readonly canFinishDrawing = computed(() => this.pointCount() >= 3);
   readonly drawingMessage = signal('');
+  readonly conditionsOpen = signal(false);
 
   hiddeHeatMap: WritableSignal<boolean> = signal(false);
   interactive: WritableSignal<boolean> = signal(false);
@@ -46,13 +54,32 @@ export class CesiumMapComponent implements OnDestroy {
 
   toggleInteraction() {
     if (this.interactive() && this.drawing()) this.cancelDrawing();
+    this.conditionsOpen.set(false);
     this.interactive.update(v => !v);
     this.applyInteraction();
     if (!this.interactive()) this.focusAfterRender(this.exploreButton());
   }
 
+  toggleConditions() {
+    if (!this.interactive() || this.drawing()) return;
+    if (this.conditionsOpen()) {
+      this.closeConditions();
+      return;
+    }
+    this.conditionsOpen.set(true);
+    this.focusAfterRender(this.conditionsPanel());
+  }
+
+  closeConditions(event?: Event) {
+    if (!this.conditionsOpen()) return;
+    event?.stopPropagation();
+    this.conditionsOpen.set(false);
+    this.focusAfterRender(this.conditionsButton());
+  }
+
   drawArea() {
     if (!this.interactive() || this.drawing()) return;
+    this.conditionsOpen.set(false);
     this.drawingPoints.set([]);
     this.drawingMessage.set('');
     this.drawing.set(true);
@@ -107,8 +134,8 @@ export class CesiumMapComponent implements OnDestroy {
     this.focusAfterRender(this.drawButton());
   }
 
-  private focusAfterRender(button: ElementRef<HTMLButtonElement> | undefined) {
-    afterNextRender(() => button?.nativeElement.focus(), { injector: this.injector });
+  private focusAfterRender(element: ElementRef<HTMLElement> | undefined) {
+    afterNextRender(() => element?.nativeElement.focus({ preventScroll: true }), { injector: this.injector });
   }
 
   private createDraft() {
@@ -266,6 +293,7 @@ export class CesiumMapComponent implements OnDestroy {
 
   private async initMap() {
     const container = this.mapEl().nativeElement; // read it before any await
+    const creditContainer = this.mapCredits().nativeElement;
 
     const Cesium = await import('cesium'); // loaded only in the browser, in its own chunk
     this.Cesium = Cesium;
@@ -275,6 +303,7 @@ export class CesiumMapComponent implements OnDestroy {
       Cesium.Ion.defaultAccessToken = environment.cesiumIonToken;
 
       const viewer = new Cesium.Viewer(container, {
+        creditContainer,
         terrain: Cesium.Terrain.fromWorldTerrain(), // 3D mountains
         animation: false,
         infoBox: false,
@@ -324,7 +353,7 @@ export class CesiumMapComponent implements OnDestroy {
       // A zero range lets Cesium fit the whole area, even when its coordinates change.
       viewer.zoomTo(
         this.exampleArea,
-        new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-35), 0),
+        new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-35), 3000),
       ).catch((error) => console.error('Could not frame the example area', error));
     });
     this.applyInteraction();

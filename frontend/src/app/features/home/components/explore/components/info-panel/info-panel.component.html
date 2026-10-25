@@ -1,1 +1,63 @@
-<p>info-panel works!</p>
+<aside class="info-panel" aria-labelledby="info-panel-title">
+  <header class="panel-header">
+    <p class="eyebrow">{{ 'infoPanel.eyebrow' | translate }}</p>
+    <h2 id="info-panel-title">{{ 'infoPanel.title' | translate }}</h2>
+    <p class="introduction">{{ 'infoPanel.introduction' | translate }}</p>
+  </header>
+
+  <p class="demo-notice">{{ 'infoPanel.demoNotice' | translate }}</p>
+
+  <section class="example-result" aria-labelledby="example-result-title">
+    <h3 id="example-result-title" class="eyebrow">
+      {{ 'infoPanel.result.title' | translate }}
+    </h3>
+    <div class="result-reading">
+      <p class="fwi-reading"><strong>27.4</strong><span>FWI</span></p>
+      <span class="danger-badge">{{ 'infoPanel.result.high' | translate }}</span>
+    </div>
+    <p class="result-hint">{{ 'infoPanel.result.hint' | translate }}</p>
+  </section>
+
+  <section class="context panel-section" aria-labelledby="panel-context-title">
+    <h3 id="panel-context-title">{{ 'infoPanel.context.title' | translate }}</h3>
+    <dl>
+      <div>
+        <dt>{{ 'infoPanel.context.engine' | translate }}</dt>
+        <dd>CesiumJS</dd>
+      </div>
+      <div>
+        <dt>{{ 'infoPanel.context.terrain' | translate }}</dt>
+        <dd>Cesium World Terrain</dd>
+      </div>
+      <div>
+        <dt>{{ 'infoPanel.context.imagery' | translate }}</dt>
+        <dd>{{ 'infoPanel.context.imageryValue' | translate }}</dd>
+      </div>
+      <div>
+        <dt>{{ 'infoPanel.context.fwiSource' | translate }}</dt>
+        <dd>{{ 'infoPanel.context.fwiSourceValue' | translate }}</dd>
+      </div>
+      <div>
+        <dt>{{ 'infoPanel.context.drawing' | translate }}</dt>
+        <dd>{{ 'infoPanel.context.drawingValue' | translate }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="design-notes panel-section" aria-labelledby="panel-design-title">
+    <h3 id="panel-design-title">{{ 'infoPanel.design.title' | translate }}</h3>
+    <p>{{ 'infoPanel.design.instructions' | translate }}</p>
+    <p>{{ 'infoPanel.design.prototype' | translate }}</p>
+  </section>
+
+  <div class="safety-section panel-section">
+    <div class="safety-notice">
+      <p class="safety-title">{{ 'infoPanel.safety.title' | translate }}</p>
+      <p>{{ 'infoPanel.safety.description' | translate }}</p>
+      <a href="#limitations">{{ 'infoPanel.safety.link' | translate }}</a>
+    </div>
+    <p id="limitations" class="provider-notice" tabindex="-1">
+      {{ 'infoPanel.safety.providers' | translate }}
+    </p>
+  </div>
+</aside>

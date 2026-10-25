@@ -1,4 +1,41 @@
 {
+    "mapConditions": {
+        "show": "View example conditions",
+        "hide": "Hide conditions"
+    },
+    "infoPanel": {
+        "eyebrow": "Designed around a real map",
+        "title": "Example area",
+        "introduction": "The interface surrounds Cesium; it does not replace its terrain with an illustration.",
+        "demoNotice": "Example FWI values and cells are fictitious. Drawing does not calculate results. Terrain and imagery load from real external services.",
+        "result": {
+            "title": "Cell C2 / illustrative data",
+            "high": "High",
+            "hint": "This cell displays a fictitious value to explore the example panel design."
+        },
+        "context": {
+            "title": "Context",
+            "engine": "3D engine",
+            "terrain": "Terrain",
+            "imagery": "Imagery",
+            "imageryValue": "Cesium base layer",
+            "fwiSource": "FWI source",
+            "fwiSourceValue": "None / fictitious values",
+            "drawing": "Mobile drawing",
+            "drawingValue": "Interactive sketch, without geographic validation"
+        },
+        "design": {
+            "title": "For your Figma design",
+            "instructions": "Use a screenshot of this view as a background. Design the search, drawing tools and panel as separate components.",
+            "prototype": "This prototype shows navigation, tilt, terrain and terrain-clamped cells. It does not include coverage validation or calculations."
+        },
+        "safety": {
+            "title": "Educational demo, not an official warning.",
+            "description": "Do not use the numbers in this mockup to make decisions. A low FWI does not mean it is safe.",
+            "link": "Understand the limitations",
+            "providers": "Requires internet and WebGL. The viewer uses external services. External providers receive requests for visible tiles. Production use requires reviewing terms and quotas. FWI values are fictitious and do not assess real risk."
+        }
+    },
     "header": {
         "logoLabel": "SubegIA, back to top",
         "menuToggle": "Open or close menu",

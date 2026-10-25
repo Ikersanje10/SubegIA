@@ -1,31 +1,135 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideTranslateService, TranslateService } from '@ngx-translate/core';
 import { vi } from 'vitest';
 import * as Cesium from 'cesium';
 import { CesiumMapComponent } from './cesium-map.component';
 import { createExampleCells, EXAMPLE_AREA_COORDINATES, type Coordinate } from './example-area';
-
-vi.mock('@angular/core', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@angular/core')>()),
-  // Panel tests do not need Cesium's browser-only WebGL initialization.
-  afterNextRender: vi.fn(),
-}));
+import es from '../../../../../../../../public/i18n/es.json';
 
 describe('CesiumMapComponent', () => {
+  const initializeMap = CesiumMapComponent.prototype['initMap'];
   let component: CesiumMapComponent;
   let fixture: ComponentFixture<CesiumMapComponent>;
 
   beforeEach(async () => {
+    CesiumMapComponent.prototype['initMap'] = async () => undefined;
     await TestBed.configureTestingModule({
       imports: [CesiumMapComponent],
+      providers: [provideTranslateService({ lang: 'es' })],
     }).compileComponents();
 
+    TestBed.inject(TranslateService).setTranslation('es', es);
     fixture = TestBed.createComponent(CesiumMapComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
 
+  afterEach(() => {
+    CesiumMapComponent.prototype['initMap'] = initializeMap;
+  });
+
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  describe('example conditions', () => {
+    const panel = () => fixture.nativeElement.querySelector('#map-conditions') as HTMLDivElement;
+    const toggle = () => fixture.nativeElement.querySelector('.conditions-button') as HTMLButtonElement;
+
+    it('keeps the panel in the page and does not show the toggle before exploration', () => {
+      expect(panel().classList.contains('conditions-hidden')).toBe(false);
+      expect(toggle()).toBeNull();
+      component.toggleConditions();
+      expect(component.conditionsOpen()).toBe(false);
+    });
+
+    it('opens and closes the panel with the fullscreen conditions button', async () => {
+      component.toggleInteraction();
+      await fixture.whenStable();
+
+      expect(panel().classList.contains('conditions-hidden')).toBe(true);
+      expect(panel().hasAttribute('inert')).toBe(true);
+      expect(panel().getAttribute('aria-hidden')).toBe('true');
+      expect(toggle().getAttribute('aria-expanded')).toBe('false');
+      expect(toggle().getAttribute('aria-controls')).toBe(panel().id);
+      expect(toggle().textContent?.trim()).toBe(es.mapConditions.show);
+      expect(toggle().parentElement).toBe(panel().parentElement);
+      expect(toggle().nextElementSibling).toBe(panel());
+      const panelFocus = vi.spyOn(panel(), 'focus');
+
+      toggle().click();
+      await fixture.whenStable();
+
+      expect(component.conditionsOpen()).toBe(true);
+      expect(panel().classList.contains('conditions-hidden')).toBe(false);
+      expect(panel().hasAttribute('inert')).toBe(false);
+      expect(panel().hasAttribute('aria-hidden')).toBe(false);
+      expect(panelFocus).toHaveBeenCalledWith({ preventScroll: true });
+      expect(panel().classList.contains('conditions-expanded')).toBe(true);
+      expect(toggle().getAttribute('aria-expanded')).toBe('true');
+      expect(toggle().textContent?.trim()).toBe(es.mapConditions.hide);
+      expect(panel().parentElement?.classList.contains('sheet-open')).toBe(true);
+      expect(fixture.nativeElement.querySelector('.mapExampleControls').classList.contains('hidden'))
+        .toBe(false);
+
+      const buttonFocus = vi.spyOn(toggle(), 'focus');
+      toggle().click();
+      await fixture.whenStable();
+
+      expect(component.conditionsOpen()).toBe(false);
+      expect(panel().classList.contains('conditions-hidden')).toBe(true);
+      expect(panel().parentElement?.classList.contains('sheet-open')).toBe(false);
+      expect(buttonFocus).toHaveBeenCalledWith({ preventScroll: true });
+      expect(fixture.nativeElement.querySelector('.mapExampleControls').classList.contains('hidden'))
+        .toBe(false);
+    });
+
+    it('closes the panel with Escape', async () => {
+      component.toggleInteraction();
+      component.toggleConditions();
+      await fixture.whenStable();
+
+      panel().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await fixture.whenStable();
+
+      expect(component.conditionsOpen()).toBe(false);
+      expect(panel().classList.contains('conditions-hidden')).toBe(true);
+    });
+
+    it('restores the page panel on exit and starts collapsed on the next exploration', async () => {
+      component.toggleInteraction();
+      component.toggleConditions();
+      await fixture.whenStable();
+      component.toggleInteraction();
+      await fixture.whenStable();
+
+      expect(component.conditionsOpen()).toBe(false);
+      expect(panel().classList.contains('conditions-hidden')).toBe(false);
+      expect(panel().classList.contains('conditions-expanded')).toBe(false);
+      expect(toggle()).toBeNull();
+
+      component.toggleInteraction();
+      await fixture.whenStable();
+      expect(panel().classList.contains('conditions-hidden')).toBe(true);
+    });
+
+    it('closes the sheet and disables its toggle while drawing', async () => {
+      component.toggleInteraction();
+      component.toggleConditions();
+      component.drawArea();
+      await fixture.whenStable();
+
+      expect(component.conditionsOpen()).toBe(false);
+      expect(toggle().disabled).toBe(true);
+      expect(panel().classList.contains('conditions-hidden')).toBe(true);
+      component.toggleConditions();
+      expect(component.conditionsOpen()).toBe(false);
+
+      component.cancelDrawing();
+      await fixture.whenStable();
+      expect(toggle().disabled).toBe(false);
+      expect(panel().classList.contains('conditions-hidden')).toBe(true);
+    });
   });
 
   it('should display the location and headline above the map', () => {

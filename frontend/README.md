@@ -2,6 +2,30 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.4.
 
+## Example information panel
+
+The explore view displays the information panel directly below the map. It uses the
+shared Bosque mineral palette and ES/EN/EU translations from `public/i18n`.
+The C2 cell, FWI value of 27.4 and High category are static design examples, not
+map-selection results or calculated assessments. The panel includes map context,
+Figma design notes, safety warnings and an in-page limitations link. Terrain and
+imagery still come from the existing Cesium viewer's external services.
+
+During fullscreen exploration, the map takes the space above a bottom conditions
+button (normally a 90/10 viewport split, with a minimum touch-friendly bar height).
+The collapsed sheet is a rounded, full-width text toggle. Opening it grows the
+sheet to at most 80% of the viewport, with "Hide conditions" at the top and the
+same panel scrolling underneath. The sheet slides over a fixed-size map using
+`transform`, rather than animating height and resizing Cesium on every frame.
+The toggle also keeps a fixed height. Attribution uses Cesium's `creditContainer`
+option and stays at the top of the fullscreen map, clear of the sheet.
+Opening and closing ease over 360 ms with a content fade. Reduced-motion settings
+disable these transitions; closed content is inert and hidden from assistive technology.
+`conditionsOpen` controls visibility and `ng-content` projects the panel from the
+explore component without duplicating it or recreating the viewer. Escape closes
+the sheet and returns focus to the button without scrolling. Drawing closes and disables the sheet,
+and leaving exploration resets it.
+
 ## Development server
 
 To start a local development server, run:

@@ -1,4 +1,41 @@
 {
+    "mapConditions": {
+        "show": "Ver condiciones de ejemplo",
+        "hide": "Ocultar condiciones"
+    },
+    "infoPanel": {
+        "eyebrow": "Diseño con mapa real",
+        "title": "Área de ejemplo",
+        "introduction": "La interfaz rodea a Cesium, no sustituye su terreno por una ilustración.",
+        "demoNotice": "FWI y celdas de ejemplo ficticios. Dibujar no calcula resultados. El relieve y las imágenes se cargan de servicios externos reales.",
+        "result": {
+            "title": "Celda C2 / dato ilustrativo",
+            "high": "Alto",
+            "hint": "Esta celda muestra un valor ficticio para explorar el diseño del panel de ejemplo."
+        },
+        "context": {
+            "title": "Contexto",
+            "engine": "Motor 3D",
+            "terrain": "Relieve",
+            "imagery": "Imágenes",
+            "imageryValue": "Capa base de Cesium",
+            "fwiSource": "Fuente del FWI",
+            "fwiSourceValue": "Ninguna / valores ficticios",
+            "drawing": "Dibujo móvil",
+            "drawingValue": "Boceto interactivo, sin validación geográfica"
+        },
+        "design": {
+            "title": "Para tu diseño en Figma",
+            "instructions": "Usa una captura de esta vista como fondo. Diseña el buscador, las herramientas de dibujo y el panel como componentes separados.",
+            "prototype": "Este prototipo muestra navegación, inclinación, relieve y celdas pegadas al terreno. No incluye validación de cobertura ni cálculos."
+        },
+        "safety": {
+            "title": "Demo educativa, no aviso oficial.",
+            "description": "No uses los números de esta maqueta para tomar decisiones. Un FWI bajo no significa que sea seguro.",
+            "link": "Entender las limitaciones",
+            "providers": "Requiere internet y WebGL. El visor utiliza servicios externos. Los proveedores externos reciben las peticiones de los mosaicos visibles. Su uso en producción requiere revisar condiciones y cuotas. Los valores FWI son ficticios y no evalúan el riesgo real."
+        }
+    },
     "header": {
         "logoLabel": "SubegIA, volver arriba",
         "menuToggle": "Abrir o cerrar menu",
