@@ -1,4 +1,10 @@
 {
+    "mapLoading": {
+        "message": "Cargando el mapa…",
+        "hint": "Preparando el relieve y las imágenes. Puede tardar unos instantes.",
+        "error": "No se ha podido cargar el mapa. Comprueba tu conexión y vuelve a cargar la página.",
+        "reload": "Volver a cargar la página"
+    },
     "mapLegend": {
         "title": "FWI de ejemplo",
         "lower": "Menor peligro",

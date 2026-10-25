@@ -1,4 +1,10 @@
 {
+    "mapLoading": {
+        "message": "Loading the map…",
+        "hint": "Preparing terrain and imagery. This may take a few moments.",
+        "error": "The map could not be loaded. Check your connection and reload the page.",
+        "reload": "Reload page"
+    },
     "mapLegend": {
         "title": "Example FWI",
         "lower": "Lower danger",

@@ -31,6 +31,8 @@ export class CesiumMapComponent implements OnDestroy {
   private drawingSource?: CustomDataSource;
   private drawingHandler?: ScreenSpaceEventHandler;
   private readonly vertexEntities: Entity[] = [];
+  private mapLoadTimeout?: ReturnType<typeof setTimeout>;
+  private cancelMapLoad?: () => void;
 
   readonly drawing = signal(false);
   readonly drawingPoints = signal<Cartesian3[]>([]);
@@ -41,6 +43,10 @@ export class CesiumMapComponent implements OnDestroy {
   readonly wideLayout = signal(false);
   readonly useBottomSheet = computed(() => this.interactive() && !this.wideLayout());
 
+
+  mapLoading: WritableSignal<boolean> = signal(true);
+  readonly mapError = signal(false);
+  readonly mapUnavailable = computed(() => this.mapLoading() || this.mapError());
   hiddeHeatMap: WritableSignal<boolean> = signal(false);
   interactive: WritableSignal<boolean> = signal(false);
 
@@ -82,6 +88,7 @@ export class CesiumMapComponent implements OnDestroy {
   }
 
   toggleInteraction() {
+    if (this.mapUnavailable()) return;
     if (this.interactive() && this.drawing()) this.cancelDrawing();
     this.conditionsOpen.set(false);
     this.interactive.update(v => !v);
@@ -336,16 +343,23 @@ export class CesiumMapComponent implements OnDestroy {
     const container = this.mapEl().nativeElement; // read it before any await
     const creditContainer = this.mapCredits().nativeElement;
 
+    this.mapLoadTimeout = setTimeout(
+      () => this.failMapLoad(new Error('Initial map loading exceeded 45 seconds')),
+      45_000,
+    );
+    try {
     const Cesium = await import('cesium'); // loaded only in the browser, in its own chunk
     this.Cesium = Cesium;
-    if (this.destroyed) return;
+    if (this.destroyed || this.mapError()) return;
 
-    this.zone.runOutsideAngular(() => {
+    await this.zone.runOutsideAngular(async () => {
       Cesium.Ion.defaultAccessToken = environment.cesiumIonToken;
+      const terrainProvider = await Cesium.createWorldTerrainAsync();
+      if (this.destroyed || this.mapError()) return;
 
       const viewer = new Cesium.Viewer(container, {
         creditContainer,
-        terrain: Cesium.Terrain.fromWorldTerrain(), // 3D mountains
+        terrainProvider,
         requestRenderMode: true,
         maximumRenderTimeChange: Number.POSITIVE_INFINITY,
         shouldAnimate: false,
@@ -396,16 +410,93 @@ export class CesiumMapComponent implements OnDestroy {
         .catch((error) => console.error('Could not load 3D buildings', error));
 
       // A zero range lets Cesium fit the whole area, even when its coordinates change.
-      viewer.zoomTo(
+      const framing = viewer.zoomTo(
         this.exampleArea,
         new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-35), 3000),
-      ).catch((error) => console.error('Could not frame the example area', error));
+      );
+      await this.waitForGlobeTiles(viewer, framing);
+      if (!this.destroyed && !this.mapError()) {
+        this.zone.run(() => this.mapLoading.set(false));
+      }
     });
     this.applyInteraction();
+    } catch (error) {
+      this.failMapLoad(error);
+    } finally {
+      clearTimeout(this.mapLoadTimeout);
+    }
+  }
+
+  private waitForGlobeTiles(viewer: Viewer, framing: Promise<boolean>): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const removers: Array<() => void> = [];
+      let settled = false;
+      let framed = false;
+      const finish = (error?: unknown) => {
+        if (settled) return;
+        settled = true;
+        removers.forEach(remove => remove());
+        this.cancelMapLoad = undefined;
+        if (error !== undefined) reject(error);
+        else resolve();
+      };
+
+      this.cancelMapLoad = () => finish(new Error('Map loading cancelled'));
+      removers.push(
+        viewer.scene.postRender.addEventListener(() => {
+          const imageryReady = Array.from(
+            { length: viewer.imageryLayers.length },
+            (_, index) => viewer.imageryLayers.get(index).ready,
+          ).every(Boolean);
+          if (framed && imageryReady && viewer.scene.globe.tilesLoaded) finish();
+        }),
+        viewer.scene.renderError.addEventListener((_scene, error) => finish(error)),
+        viewer.terrainProvider.errorEvent.addEventListener(error => finish(error)),
+      );
+
+      const watchProvider = (provider: import('cesium').ImageryProvider) => {
+        if (settled) return;
+        removers.push(provider.errorEvent.addEventListener(error => finish(error)));
+        viewer.scene.requestRender();
+      };
+      for (let index = 0; index < viewer.imageryLayers.length; index++) {
+        const layer = viewer.imageryLayers.get(index);
+        removers.push(layer.errorEvent.addEventListener(error => finish(error)));
+        if (layer.ready) watchProvider(layer.imageryProvider);
+        else removers.push(layer.readyEvent.addEventListener(watchProvider));
+      }
+
+      framing.then(success => {
+        if (settled) return;
+        if (!success) {
+          finish(new Error('Could not frame the initial map area'));
+          return;
+        }
+        framed = true;
+        viewer.scene.requestRender();
+      }).catch(finish);
+    });
+  }
+
+  private failMapLoad(error: unknown) {
+    if (this.destroyed || this.mapError()) return;
+    console.error('Could not load the map', error);
+    clearTimeout(this.mapLoadTimeout);
+    this.zone.run(() => {
+      this.mapError.set(true);
+      this.mapLoading.set(false);
+    });
+    this.cancelMapLoad?.();
+  }
+
+  reloadPage() {
+    window.location.reload();
   }
 
   ngOnDestroy(): void {
     this.destroyed = true;
+    clearTimeout(this.mapLoadTimeout);
+    this.cancelMapLoad?.();
     this.drawingHandler?.destroy();
     this.viewer?.destroy();
   }

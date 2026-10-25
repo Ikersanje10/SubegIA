@@ -1,4 +1,10 @@
 {
+    "mapLoading": {
+        "message": "Mapa kargatzen…",
+        "hint": "Erliebea eta irudiak prestatzen. Baliteke une batzuk behar izatea.",
+        "error": "Ezin izan da mapa kargatu. Egiaztatu konexioa eta kargatu orria berriro.",
+        "reload": "Kargatu orria berriro"
+    },
     "mapLegend": {
         "title": "Adibideko FWIa",
         "lower": "Arrisku txikiagoa",

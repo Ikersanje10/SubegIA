@@ -11,6 +11,22 @@ added buildings explicitly request a frame. A settled scene does not redraw
 continuously while the user reads or scrolls the page. Terrain, imagery,
 resolution and visual quality are unchanged.
 
+## Initial map loading
+
+An Earth loading overlay covers the complete map workspace while the initial
+view loads. Map controls, the FWI legend and the projected information panel
+remain hidden and unavailable to keyboard interaction until the camera is
+framed, imagery providers are ready and a frame renders with globe tiles loaded.
+The local `public/icons/earth.svg` uses a sage CSS mask and a slow rotation;
+reduced-motion preferences disable the animation.
+
+Loading/error messages use ES/EU/EN translations. Import, terrain, imagery,
+framing and rendering failures are logged and exposed to the user. After 45
+seconds an unfinished load shows an error rather than spinning indefinitely;
+the recovery button explicitly reloads the page. Readiness listeners and the
+timeout are cleaned up on completion, failure and teardown. Normal map navigation
+does not restart this loader, and optional 3D buildings do not block readiness.
+
 ## Example information panel
 
 The explore view displays the information panel below the map on phones and

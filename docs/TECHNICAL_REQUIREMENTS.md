@@ -157,6 +157,22 @@ Documentation inspected:
 
 ### CesiumJS integration requirements
 
+#### Map loading screen (implemented 2026-10-25)
+
+- [x] Add a visible loading indicator while the initial map loads, hiding map controls, the legend and the information panel until ready.
+- [ ] Review the loading experience on a real phone and with a throttled connection.
+
+The loading overlay spans the map workspace, including the tablet/desktop aside,
+while leaving page navigation and supporting sections usable. It uses the user's
+local Earth SVG, a reduced-motion-aware animation, and ES/EU/EN status messages.
+Readiness requires successful camera framing, ready imagery providers, and a
+rendered frame with the initial globe tiles loaded. Provider/rendering errors or
+a 45-second loading timeout show a translated error and an explicitly labelled
+page-reload button, not a successful-map fallback. Loading listeners and the timer
+are released on completion, failure or component destruction. Later camera
+navigation and optional 3D-building loading do not restart or block this initial
+screen.
+
 Confirmed library: CesiumJS for actual interactive 3D terrain, not a flat map or an abstract mountain illustration. The Angular application must own the Cesium viewer lifecycle: create it once the map container is available, manage handlers and entities, and destroy the viewer and handlers on teardown.
 
 Configure the library's worker, widget stylesheet, and static-asset paths using the selected Angular build setup. Verify compatibility when choosing versions; the preview's CDN-pinned CesiumJS 1.132 is not a production-version decision.

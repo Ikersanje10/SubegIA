@@ -1,5 +1,28 @@
-<section class="cesium-map" [class.fullScreen]="interactive()">
-  <div class="map-viewport">
+<section
+  class="cesium-map"
+  [class.fullScreen]="interactive()"
+  [class.map-unavailable]="mapUnavailable()"
+>
+  @if (mapLoading()) {
+    <div class="map-loading" role="status" aria-live="polite" aria-atomic="true">
+      <span class="globe" aria-hidden="true"></span>
+      <p>{{ 'mapLoading.message' | translate }}</p>
+      <p class="loading-hint">{{ 'mapLoading.hint' | translate }}</p>
+    </div>
+  } @else if (mapError()) {
+    <div class="map-loading">
+      <p role="alert">{{ 'mapLoading.error' | translate }}</p>
+      <button type="button" class="reload-map" (click)="reloadPage()">
+        {{ 'mapLoading.reload' | translate }}
+      </button>
+    </div>
+  }
+  <div
+    class="map-viewport"
+    [attr.aria-busy]="mapLoading()"
+    [attr.aria-hidden]="mapUnavailable() ? 'true' : null"
+    [attr.inert]="mapUnavailable() ? '' : null"
+  >
     <div #cesium class="map" [class.map-expanded]="interactive()"></div>
     <div #mapCredits class="map-credits"></div>
     <aside
@@ -70,10 +93,7 @@
       }
     </div>
 
-    <div
-      class="mapExampleControls"
-      [class.hidden]="!interactive() || drawing()"
-    >
+    <div class="mapExampleControls" [class.hidden]="!interactive() || drawing()">
       <button class="mapExampleControlsButton example-area-button" (click)="showExampleArea()">
         Ver area de ejemplo
       </button>
@@ -85,6 +105,7 @@
 
   <div
     class="conditions-sheet"
+    [hidden]="mapUnavailable()"
     [class.sheet-fullscreen]="useBottomSheet()"
     [class.sheet-open]="useBottomSheet() && conditionsOpen()"
   >

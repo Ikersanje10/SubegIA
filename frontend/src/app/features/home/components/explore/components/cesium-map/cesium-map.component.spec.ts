@@ -25,6 +25,8 @@ describe('CesiumMapComponent', () => {
     fixture = TestBed.createComponent(CesiumMapComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
+    component.mapLoading.set(false);
+    await fixture.whenStable();
   });
 
   afterEach(() => {
@@ -34,6 +36,182 @@ describe('CesiumMapComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  describe('initial map loading', () => {
+    it('only exposes the loading status until the map is ready on phone and wide layouts', async () => {
+      const element: HTMLElement = fixture.nativeElement;
+      for (const width of [390, 800, 1280]) {
+        vi.stubGlobal('innerWidth', width);
+        component.updateLayout();
+        component.mapLoading.set(true);
+        await fixture.whenStable();
+
+        expect(element.querySelector('.map-loading [aria-hidden="true"]')).not.toBeNull();
+        expect(element.querySelector('.map-loading[role="status"]')?.textContent)
+          .toContain(es.mapLoading.message);
+        expect(element.querySelector('.map-viewport')?.hasAttribute('inert')).toBe(true);
+        expect(element.querySelector('.map-viewport')?.getAttribute('aria-hidden')).toBe('true');
+        expect(element.querySelector('.conditions-sheet')?.hasAttribute('hidden')).toBe(true);
+        component.toggleInteraction();
+        expect(component.interactive()).toBe(false);
+      }
+
+      component.mapLoading.set(false);
+      await fixture.whenStable();
+      expect(element.querySelector('.map-loading')).toBeNull();
+      expect(element.querySelector('.map-viewport')?.hasAttribute('inert')).toBe(false);
+      expect(element.querySelector('.conditions-sheet')?.hasAttribute('hidden')).toBe(false);
+    });
+
+    it('translates loading and failure messages without exposing map controls after failure', async () => {
+      const element: HTMLElement = fixture.nativeElement;
+      for (const [language, translations] of Object.entries({ es, en, eu })) {
+        const translate = TestBed.inject(TranslateService);
+        translate.setTranslation(language, translations);
+        translate.use(language);
+        component.mapLoading.set(true);
+        component.mapError.set(false);
+        await fixture.whenStable();
+        expect(element.querySelector('.map-loading')?.textContent).toContain(translations.mapLoading.message);
+        expect(element.querySelector('.loading-hint')?.textContent).toBe(translations.mapLoading.hint);
+
+        component.mapLoading.set(false);
+        component.mapError.set(true);
+        await fixture.whenStable();
+        expect(element.querySelector('[role="alert"]')?.textContent).toBe(translations.mapLoading.error);
+        expect(element.querySelector('.reload-map')?.textContent?.trim()).toBe(translations.mapLoading.reload);
+        expect(element.querySelector('.globe')).toBeNull();
+        expect(element.querySelector('.map-viewport')?.hasAttribute('inert')).toBe(true);
+        expect(element.querySelector('.conditions-sheet')?.hasAttribute('hidden')).toBe(true);
+        component.toggleInteraction();
+        expect(component.interactive()).toBe(false);
+      }
+    });
+
+    const makeLoadingViewer = () => {
+      const scene = {
+        postRender: new Cesium.Event(),
+        renderError: new Cesium.Event(),
+        requestRender: vi.fn(),
+        globe: { tilesLoaded: false },
+      };
+      const terrainProvider = { errorEvent: new Cesium.Event() };
+      const imageryProvider = { errorEvent: new Cesium.Event() };
+      const layer = {
+        ready: true,
+        imageryProvider,
+        readyEvent: new Cesium.Event(),
+        errorEvent: new Cesium.Event(),
+      };
+      Object.defineProperty(component, 'viewer', {
+        value: {
+          scene,
+          terrainProvider,
+          imageryLayers: { length: 1, get: () => layer },
+          destroy: vi.fn(),
+        },
+        writable: true,
+      });
+      return { scene, terrainProvider, imageryProvider, layer };
+    };
+
+    it('waits for framing and a rendered frame with loaded tiles, then removes its listeners', async () => {
+      const { scene, terrainProvider, imageryProvider } = makeLoadingViewer();
+      let finishFraming!: (success: boolean) => void;
+      const framing = new Promise<boolean>(resolve => { finishFraming = resolve; });
+      const ready = vi.fn();
+      const pending = component['waitForGlobeTiles'](component['viewer']!, framing).then(ready);
+      scene.globe.tilesLoaded = true;
+      scene.postRender.raiseEvent();
+      await Promise.resolve();
+      expect(ready).not.toHaveBeenCalled();
+      finishFraming(true);
+      await Promise.resolve();
+      expect(scene.requestRender).toHaveBeenCalled();
+      scene.globe.tilesLoaded = false;
+      scene.postRender.raiseEvent();
+      await Promise.resolve();
+      expect(ready).not.toHaveBeenCalled();
+      scene.globe.tilesLoaded = true;
+      scene.postRender.raiseEvent();
+      await pending;
+      expect(ready).toHaveBeenCalledOnce();
+      expect(scene.postRender.numberOfListeners).toBe(0);
+      expect(scene.renderError.numberOfListeners).toBe(0);
+      expect(terrainProvider.errorEvent.numberOfListeners).toBe(0);
+      expect(imageryProvider.errorEvent.numberOfListeners).toBe(0);
+    });
+
+    it('rejects a failed framing operation rather than presenting it as a ready map', async () => {
+      makeLoadingViewer();
+      await expect(component['waitForGlobeTiles'](
+        component['viewer']!, Promise.resolve(false),
+      )).rejects.toThrow('Could not frame');
+    });
+
+    it('does not reveal the map before its imagery provider is ready', async () => {
+      const { scene, layer, imageryProvider } = makeLoadingViewer();
+      layer.ready = false;
+      scene.globe.tilesLoaded = true;
+      const ready = vi.fn();
+      const pending = component['waitForGlobeTiles'](
+        component['viewer']!, Promise.resolve(true),
+      ).then(ready);
+      await Promise.resolve();
+      scene.postRender.raiseEvent();
+      await Promise.resolve();
+      expect(ready).not.toHaveBeenCalled();
+      layer.ready = true;
+      layer.readyEvent.raiseEvent(imageryProvider);
+      scene.postRender.raiseEvent();
+      await pending;
+      expect(ready).toHaveBeenCalledOnce();
+      expect(layer.readyEvent.numberOfListeners).toBe(0);
+    });
+
+    for (const source of ['terrain', 'imagery', 'render', 'imagery layer'] as const) {
+      it(`rejects ${source} failures and cleans up loading listeners`, async () => {
+        const { scene, terrainProvider, imageryProvider, layer } = makeLoadingViewer();
+        const pending = component['waitForGlobeTiles'](component['viewer']!, Promise.resolve(true));
+        const error = new Error(`${source} failed`);
+        if (source === 'terrain') terrainProvider.errorEvent.raiseEvent(error);
+        else if (source === 'imagery') imageryProvider.errorEvent.raiseEvent(error);
+        else if (source === 'imagery layer') layer.errorEvent.raiseEvent(error);
+        else scene.renderError.raiseEvent(scene, error);
+        await expect(pending).rejects.toBe(error);
+        expect(scene.postRender.numberOfListeners).toBe(0);
+        expect(layer.errorEvent.numberOfListeners).toBe(0);
+      });
+    }
+
+    it('logs and exposes failure, including a timeout, without keeping the spinner or listeners', async () => {
+      const { scene } = makeLoadingViewer();
+      component.mapLoading.set(true);
+      const pending = component['waitForGlobeTiles'](component['viewer']!, Promise.resolve(true));
+      const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      try {
+        const error = new Error('Initial map loading exceeded 45 seconds');
+        component['failMapLoad'](error);
+        await expect(pending).rejects.toThrow('cancelled');
+        expect(log).toHaveBeenCalledWith('Could not load the map', error);
+        expect(component.mapLoading()).toBe(false);
+        expect(component.mapError()).toBe(true);
+        expect(scene.postRender.numberOfListeners).toBe(0);
+      } finally {
+        log.mockRestore();
+      }
+    });
+
+    it('cancels the pending load and removes listeners when the component is destroyed', async () => {
+      const { scene, layer } = makeLoadingViewer();
+      const pending = component['waitForGlobeTiles'](component['viewer']!, Promise.resolve(true));
+      fixture.destroy();
+      await expect(pending).rejects.toThrow('cancelled');
+      expect(scene.postRender.numberOfListeners).toBe(0);
+      expect(layer.readyEvent.numberOfListeners).toBe(0);
+      expect(layer.errorEvent.numberOfListeners).toBe(0);
+    });
   });
 
   describe('example conditions', () => {
