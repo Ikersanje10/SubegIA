@@ -1,0 +1,33 @@
+:host {
+  display: block;
+  background: var(--bg-base);
+  color: var(--text-secondary);
+}
+
+.footer {
+  padding: 1.25rem 1rem;
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.625rem;
+  line-height: 1.4;
+}
+
+.footer-inner {
+  max-width: 40rem;
+  margin-inline: auto;
+}
+
+p + p {
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .footer {
+    padding: 1.5rem 2rem;
+    font-size: 0.8125rem;
+  }
+
+  .footer-inner {
+    max-width: 72rem;
+  }
+}

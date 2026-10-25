@@ -1,0 +1,21 @@
+<section id="project" class="project" aria-labelledby="project-title">
+  <div class="project-inner">
+    <p class="eyebrow">{{ 'project.eyebrow' | translate }}</p>
+    <h2 id="project-title">{{ 'project.title' | translate }}</h2>
+    <p class="introduction">{{ 'project.introduction' | translate }}</p>
+
+    <div class="project-cards">
+      @for (pillar of pillars; track pillar) {
+        <article class="project-card">
+          <p class="card-label">{{ 'project.pillars.' + pillar + '.label' | translate }}</p>
+          <h3>{{ 'project.pillars.' + pillar + '.title' | translate }}</h3>
+          <p class="card-description">
+            {{ 'project.pillars.' + pillar + '.description' | translate }}
+          </p>
+        </article>
+      }
+    </div>
+
+    <p class="status-notice">{{ 'project.statusNotice' | translate }}</p>
+  </div>
+</section>

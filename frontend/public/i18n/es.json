@@ -36,6 +36,95 @@
             "providers": "Requiere internet y WebGL. El visor utiliza servicios externos. Los proveedores externos reciben las peticiones de los mosaicos visibles. Su uso en producción requiere revisar condiciones y cuotas. Los valores FWI son ficticios y no evalúan el riesgo real."
         }
     },
+    "project": {
+        "eyebrow": "El proyecto",
+        "title": "Aprender tecnología. Hacer comprensible el entorno.",
+        "introduction": "SubegIA es un proyecto personal de aprendizaje y portfolio que explora cómo presentar el peligro meteorológico de incendios sobre un mapa 3D de Gipuzkoa. No pretende sustituir a profesionales, organismos públicos ni avisos oficiales.",
+        "pillars": {
+            "explore": {
+                "label": "01 / Explorar",
+                "title": "El territorio, en tres dimensiones",
+                "description": "CesiumJS muestra relieve real, montañas y valles. El MVP permitirá dibujar un área y explorar resultados por subáreas según la información disponible."
+            },
+            "understand": {
+                "label": "02 / Entender",
+                "title": "Un índice explicado, no solo un color",
+                "description": "El objetivo es mostrar el valor FWI, su categoría, fecha, procedencia y límites. No presentar una cifra como certeza o como probabilidad de que ocurra un incendio."
+            },
+            "build": {
+                "label": "03 / Construir",
+                "title": "Una experiencia para aprender",
+                "description": "Angular, Spring Boot y visualización geoespacial forman la primera etapa. Microservicios y Spring AI se incorporarán más adelante como objetivos de aprendizaje."
+            }
+        },
+        "statusNotice": "Estado actual: maqueta con terreno real y valores ficticios. El MVP y sus calculos todavia no estan implementados. Colores y textos son propuestas de diseno."
+    },
+    "howItWorks": {
+        "eyebrow": "Cómo funcionará el MVP",
+        "title": "De los datos meteorológicos a una lectura visual.",
+        "introduction": "La interfaz se mantendrá sencilla. La aplicación documentará qué datos utiliza y cómo llega al resultado, sin delegar el cálculo científico a un modelo de lenguaje.",
+        "steps": {
+            "select": {
+                "label": "Paso 01",
+                "title": "Seleccionar un área",
+                "description": "El usuario dibujará un polígono dentro de Gipuzkoa. La selección se relacionará con las celdas o fuentes meteorológicas que realmente puedan representarla."
+            },
+            "calculate": {
+                "label": "Paso 02",
+                "title": "Calcular el FWI",
+                "description": "Spring Boot utilizará temperatura, humedad relativa del aire, viento, precipitación e historial de estados de humedad. Open-Meteo es la fuente elegida para el prototipo."
+            },
+            "explore": {
+                "label": "Paso 03",
+                "title": "Explorar y comprender",
+                "description": "Un mapa de categorías y un panel mostrarán los resultados, las fechas y la información no disponible. La orientación preventiva general enlazará a fuentes oficiales."
+            }
+        },
+        "sourceLink": "Consultar la explicación del FWI en EFFIS",
+        "opensInNewTab": "se abre en una pestaña nueva"
+    },
+    "limitations": {
+        "eyebrow": "Limitaciones y uso responsable",
+        "title": "Una visualización detallada no es una predicción exacta.",
+        "introduction": "SubegIA es una demostración experimental. No se ha establecido un porcentaje de precisión local. Estas son algunas razones por las que sus resultados no deben utilizarse como base única para decisiones sobre seguridad o gestión del terreno.",
+        "topics": {
+            "data": {
+                "label": "Datos",
+                "title": "Los modelos son estimaciones",
+                "description": "El tiempo estimado por un modelo puede diferir de lo que ocurre en una parcela. La calidad depende de la fuente, las variables y su representatividad local."
+            },
+            "scale": {
+                "label": "Escala",
+                "title": "Relieve preciso no implica clima preciso",
+                "description": "El mapa puede mostrar una ladera con detalle, pero la meteorología puede corresponder a una zona mucho mayor. Dibujar celdas pequeñas no crea nuevas mediciones."
+            },
+            "history": {
+                "label": "Historial",
+                "title": "El punto de partida importa",
+                "description": "El FWI arrastra estados de humedad de días anteriores. La inicialización, los huecos en el historial y la alineación de las horas afectan al resultado."
+            },
+            "updates": {
+                "label": "Actualización",
+                "title": "Los datos pueden llegar tarde",
+                "description": "Una evaluación diaria no representa cada minuto. Retrasos, revisiones o fallos del proveedor deben mostrarse junto con la fecha real de los datos."
+            },
+            "scope": {
+                "label": "Alcance",
+                "title": "No predice si se iniciará un incendio",
+                "description": "FWI no es una probabilidad de ignición, una simulación de propagación ni una evaluación completa de personas, edificios, combustibles y terreno."
+            },
+            "decisions": {
+                "label": "Decisiones",
+                "title": "Las indicaciones oficiales tienen prioridad",
+                "description": "Un índice bajo no significa que sea seguro ni autoriza quemas o actividades. Consulta las restricciones y avisos oficiales aplicables."
+            }
+        },
+        "backToExplore": "Volver a explorar"
+    },
+    "footer": {
+        "disclaimer": "SubegIA / Proyecto educativo y de portfolio / No es un servicio de emergencias.",
+        "designNotice": "Diseño provisional / Disponible en ES · EU · EN."
+    },
     "header": {
         "logoLabel": "SubegIA, volver arriba",
         "menuToggle": "Abrir o cerrar menu",

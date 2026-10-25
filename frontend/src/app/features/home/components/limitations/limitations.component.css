@@ -1,0 +1,133 @@
+:host {
+  display: block;
+  background: var(--bg-alternate);
+  color: var(--text-secondary);
+}
+
+.limitations {
+  padding: 1.5rem 1rem 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.section-inner {
+  max-width: 40rem;
+  margin-inline: auto;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: var(--fontWeight-bold);
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+h2 {
+  max-width: 26ch;
+  margin-top: 1rem;
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: var(--fontWeight-bold);
+  line-height: 1.2;
+}
+
+.introduction {
+  max-width: 60ch;
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.limitation-cards {
+  display: grid;
+  gap: 1.25rem;
+  margin: 0.5rem 0.25rem 0.5rem;
+}
+
+.limitation-card {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.5rem;
+  background: var(--surface-raised);
+}
+
+.card-label {
+  color: var(--accent);
+  font-size: 0.625rem;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+h3 {
+  margin-top: 0.375rem;
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  font-weight: var(--fontWeight-semiBold);
+  line-height: 1.2;
+}
+
+.card-description {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.explore-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-inline: 0.5rem;
+  color: var(--accent);
+  font-size: 0.625rem;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.explore-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.explore-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+@media (min-width: 1024px) {
+  .limitations {
+    padding: 4rem 2rem 3rem;
+  }
+
+  .section-inner {
+    max-width: 72rem;
+  }
+
+  h2 {
+    font-size: 2.5rem;
+  }
+
+  .introduction,
+  .card-description {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .limitation-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 2rem 0 1rem;
+  }
+
+  .limitation-card {
+    padding: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+  }
+
+  .card-label,
+  .explore-link {
+    font-size: 0.8125rem;
+  }
+}

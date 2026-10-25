@@ -36,6 +36,95 @@
             "providers": "Requires internet and WebGL. The viewer uses external services. External providers receive requests for visible tiles. Production use requires reviewing terms and quotas. FWI values are fictitious and do not assess real risk."
         }
     },
+    "project": {
+        "eyebrow": "The project",
+        "title": "Learning technology. Making our surroundings understandable.",
+        "introduction": "SubegIA is a personal learning and portfolio project exploring how to present weather-related fire danger on a 3D map of Gipuzkoa. It is not intended to replace professionals, public authorities or official warnings.",
+        "pillars": {
+            "explore": {
+                "label": "01 / Explore",
+                "title": "The landscape, in three dimensions",
+                "description": "CesiumJS displays real terrain, mountains and valleys. The MVP will allow users to draw an area and explore results by subarea based on the information available."
+            },
+            "understand": {
+                "label": "02 / Understand",
+                "title": "An explained index, not just a colour",
+                "description": "The aim is to show the FWI value, its category, date, source and limitations. Not to present a number as a certainty or as the probability of a fire occurring."
+            },
+            "build": {
+                "label": "03 / Build",
+                "title": "An experience for learning",
+                "description": "Angular, Spring Boot and geospatial visualisation form the first stage. Microservices and Spring AI will be added later as learning objectives."
+            }
+        },
+        "statusNotice": "Current status: a mockup with real terrain and fictitious values. The MVP and its calculations have not been implemented yet. Colours and text are design proposals."
+    },
+    "howItWorks": {
+        "eyebrow": "How the MVP will work",
+        "title": "From weather data to a visual reading.",
+        "introduction": "The interface will remain simple. The application will document which data it uses and how it reaches the result, without delegating scientific calculations to a language model.",
+        "steps": {
+            "select": {
+                "label": "Step 01",
+                "title": "Select an area",
+                "description": "The user will draw a polygon within Gipuzkoa. The selection will be matched to the weather cells or sources that can actually represent it."
+            },
+            "calculate": {
+                "label": "Step 02",
+                "title": "Calculate the FWI",
+                "description": "Spring Boot will use temperature, relative air humidity, wind, precipitation and a history of moisture states. Open-Meteo is the chosen source for the prototype."
+            },
+            "explore": {
+                "label": "Step 03",
+                "title": "Explore and understand",
+                "description": "A category map and a panel will display results, dates and unavailable information. General preventive guidance will link to official sources."
+            }
+        },
+        "sourceLink": "Read the explanation of FWI on EFFIS",
+        "opensInNewTab": "opens in a new tab"
+    },
+    "limitations": {
+        "eyebrow": "Limitations and responsible use",
+        "title": "A detailed visualisation is not an exact prediction.",
+        "introduction": "SubegIA is an experimental demonstration. No local accuracy percentage has been established. These are some reasons why its results must not be used as the sole basis for decisions about safety or land management.",
+        "topics": {
+            "data": {
+                "label": "Data",
+                "title": "Models are estimates",
+                "description": "Weather estimated by a model may differ from what happens on a particular plot. Quality depends on the source, the variables and how representative they are locally."
+            },
+            "scale": {
+                "label": "Scale",
+                "title": "Precise terrain does not imply precise weather",
+                "description": "The map may show a slope in detail, but the weather data may cover a much larger area. Drawing small cells does not create new measurements."
+            },
+            "history": {
+                "label": "History",
+                "title": "The starting point matters",
+                "description": "FWI carries over moisture states from previous days. Initialisation, gaps in the history and the alignment of times affect the result."
+            },
+            "updates": {
+                "label": "Updates",
+                "title": "Data may arrive late",
+                "description": "A daily assessment does not represent every minute. Delays, revisions or provider failures must be shown alongside the actual date of the data."
+            },
+            "scope": {
+                "label": "Scope",
+                "title": "It does not predict whether a fire will start",
+                "description": "FWI is not an ignition probability, a fire spread simulation or a complete assessment of people, buildings, fuels and terrain."
+            },
+            "decisions": {
+                "label": "Decisions",
+                "title": "Official guidance takes priority",
+                "description": "A low index does not mean it is safe or authorise burning or other activities. Consult the applicable official restrictions and warnings."
+            }
+        },
+        "backToExplore": "Back to explore"
+    },
+    "footer": {
+        "disclaimer": "SubegIA / Educational and portfolio project / Not an emergency service.",
+        "designNotice": "Provisional design / Available in ES · EU · EN."
+    },
     "header": {
         "logoLabel": "SubegIA, back to top",
         "menuToggle": "Open or close menu",

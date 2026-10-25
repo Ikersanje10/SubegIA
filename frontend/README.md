@@ -26,6 +26,29 @@ explore component without duplicating it or recreating the viewer. Escape closes
 the sheet and returns focus to the button without scrolling. Drawing closes and disables the sheet,
 and leaving exploration resets it.
 
+## Project section and navigation
+
+The project section follows the explore view at `#project`. It presents the
+project's purpose and its Explore, Understand and Build pillars, followed by a
+notice that the MVP and calculations are not implemented. Copy is available in Spanish, English and
+Basque. Cards stack on mobile and form three columns on desktop.
+
+The following section at `#howWorks` explains the planned MVP in three ordered
+steps: area selection, FWI calculation and exploring results. It matches the
+same responsive layout and languages, and links to the EFFIS explanation of FWI.
+This is explanatory content, not an implementation of the planned calculations.
+
+The final section at `#limitations` covers data, scale, history, update delays,
+scope and official guidance, with a return link to `#explore`. The map panel's
+provider notice keeps its own `#map-limitations` anchor so it remains reachable
+within fullscreen exploration without duplicating the page navigation target.
+The existing layout footer shows the educational/non-emergency disclaimer and
+provisional-design notice in all three supported languages.
+
+The header remains fixed while scrolling. Its reserved layout height and the
+page's anchor offset share `--header-height` to keep content clear of navigation.
+Fullscreen map exploration remains above the header.
+
 ## Development server
 
 To start a local development server, run:

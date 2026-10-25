@@ -1,3 +1,8 @@
+:host {
+  display: block;
+  height: var(--header-height);
+}
+
 /* =========================================================
    Header
    Mobile first: base styles, then tablet, then desktop.
@@ -8,7 +13,11 @@
 .header {
   --radius-pill: 999px;
 
-  position: relative; /* the mobile dropdown is positioned against this */
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 100;
+  height: var(--header-height);
+  background: var(--bg-alternate);
   display: flex;
   justify-content: space-between;
   align-items: center;

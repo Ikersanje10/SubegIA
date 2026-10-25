@@ -36,6 +36,95 @@
             "providers": "Internet eta WebGL behar ditu. Bisoreak kanpoko zerbitzuak erabiltzen ditu. Kanpoko hornitzaileek ikusgai dauden mosaikoen eskaerak jasotzen dituzte. Produkzioan erabiltzeko baldintzak eta kuotak berrikusi behar dira. FWI balioak fikziozkoak dira eta ez dute benetako arriskua ebaluatzen."
         }
     },
+    "project": {
+        "eyebrow": "Proiektua",
+        "title": "Teknologia ikasi. Ingurunea ulergarri egin.",
+        "introduction": "SubegIA ikaskuntza- eta portfolio-proiektu pertsonala da, Gipuzkoako 3D mapa batean suteen arrisku meteorologikoa nola aurkeztu aztertzen duena. Ez ditu profesionalak, erakunde publikoak edo abisu ofizialak ordezkatu nahi.",
+        "pillars": {
+            "explore": {
+                "label": "01 / Arakatu",
+                "title": "Lurraldea, hiru dimentsiotan",
+                "description": "CesiumJS-ek benetako erliebea, mendiak eta haranak erakusten ditu. MVPak eremu bat marrazteko eta azpieremuen emaitzak arakatzeko aukera emango du, eskuragarri dagoen informazioaren arabera."
+            },
+            "understand": {
+                "label": "02 / Ulertu",
+                "title": "Azaldutako indize bat, ez kolore bat soilik",
+                "description": "Helburua FWI balioa, haren kategoria, data, jatorria eta mugak erakustea da. Ez zifra bat ziurtasun gisa edo sute bat gertatzeko probabilitate gisa aurkeztea."
+            },
+            "build": {
+                "label": "03 / Eraiki",
+                "title": "Ikasteko esperientzia bat",
+                "description": "Angular, Spring Boot eta bistaratze geoespaziala dira lehen etapa. Mikrozerbitzuak eta Spring AI aurrerago gehituko dira ikaskuntza-helburu gisa."
+            }
+        },
+        "statusNotice": "Egungo egoera: benetako erliebea eta fikziozko balioak dituen maketa. MVPa eta haren kalkuluak oraindik ez daude inplementatuta. Koloreak eta testuak diseinu-proposamenak dira."
+    },
+    "howItWorks": {
+        "eyebrow": "Nola funtzionatuko du MVPak",
+        "title": "Datu meteorologikoetatik irakurketa bisualera.",
+        "introduction": "Interfazea sinplea izango da. Aplikazioak zer datu erabiltzen dituen eta emaitzara nola iristen den dokumentatuko du, kalkulu zientifikoa hizkuntza-eredu baten esku utzi gabe.",
+        "steps": {
+            "select": {
+                "label": "01 urratsa",
+                "title": "Eremu bat hautatu",
+                "description": "Erabiltzaileak poligono bat marraztuko du Gipuzkoa barruan. Hautaketa benetan ordezka dezaketen gelaxka edo iturri meteorologikoekin lotuko da."
+            },
+            "calculate": {
+                "label": "02 urratsa",
+                "title": "FWIa kalkulatu",
+                "description": "Spring Boot-ek tenperatura, airearen hezetasun erlatiboa, haizea, prezipitazioa eta hezetasun-egoeren historia erabiliko ditu. Open-Meteo da prototiporako aukeratutako iturria."
+            },
+            "explore": {
+                "label": "03 urratsa",
+                "title": "Arakatu eta ulertu",
+                "description": "Kategorien mapa batek eta panel batek emaitzak, datak eta eskuragarri ez dagoen informazioa erakutsiko dituzte. Prebentzio-orientazio orokorrak iturri ofizialetara lotuko du."
+            }
+        },
+        "sourceLink": "Irakurri FWIaren azalpena EFFISen",
+        "opensInNewTab": "fitxa berri batean irekitzen da"
+    },
+    "limitations": {
+        "eyebrow": "Mugak eta erabilera arduratsua",
+        "title": "Bistaratze zehatza ez da iragarpen zehatza.",
+        "introduction": "SubegIA erakustaldi esperimentala da. Ez da tokiko zehaztasun-ehunekorik ezarri. Hauek dira emaitzak segurtasunari edo lurraren kudeaketari buruzko erabakien oinarri bakar gisa ez erabiltzeko arrazoi batzuk.",
+        "topics": {
+            "data": {
+                "label": "Datuak",
+                "title": "Ereduak estimazioak dira",
+                "description": "Eredu batek estimatutako eguraldia lursail batean gertatzen denaren desberdina izan daiteke. Kalitatea iturriaren, aldagaien eta tokiko adierazgarritasunaren araberakoa da."
+            },
+            "scale": {
+                "label": "Eskala",
+                "title": "Erliebe zehatzak ez dakar eguraldi zehatzik",
+                "description": "Mapak mendi-hegal bat xehetasunez erakuts dezake, baina datu meteorologikoak askoz eremu handiago bati dagozkio. Gelaxka txikiak marrazteak ez du neurketa berririk sortzen."
+            },
+            "history": {
+                "label": "Historia",
+                "title": "Abiapuntua garrantzitsua da",
+                "description": "FWIak aurreko egunetako hezetasun-egoerak mantentzen ditu. Hasieratzeak, historiako hutsuneek eta orduen lerrokatzeak emaitzan eragiten dute."
+            },
+            "updates": {
+                "label": "Eguneraketa",
+                "title": "Datuak berandu irits daitezke",
+                "description": "Eguneroko ebaluazio batek ez du minutu bakoitza adierazten. Atzerapenak, berrikuspenak edo hornitzailearen hutsegiteak datuen benetako datarekin batera erakutsi behar dira."
+            },
+            "scope": {
+                "label": "Irismena",
+                "title": "Ez du iragartzen sute bat piztuko den",
+                "description": "FWIa ez da pizte-probabilitate bat, hedapen-simulazio bat edo pertsonen, eraikinen, erregaien eta lurraren ebaluazio oso bat."
+            },
+            "decisions": {
+                "label": "Erabakiak",
+                "title": "Argibide ofizialek dute lehentasuna",
+                "description": "Indize baxuak ez du esan nahi segurua denik, eta ez du erretzeak edo jarduerak egiteko baimenik ematen. Kontsultatu indarrean dauden murrizketa eta abisu ofizialak."
+            }
+        },
+        "backToExplore": "Itzuli arakatzera"
+    },
+    "footer": {
+        "disclaimer": "SubegIA / Hezkuntza- eta portfolio-proiektua / Ez da larrialdi-zerbitzua.",
+        "designNotice": "Behin-behineko diseinua / ES · EU · EN hizkuntzetan eskuragarri."
+    },
     "header": {
         "logoLabel": "SubegIA, hasierara itzuli",
         "menuToggle": "Menua ireki edo itxi",

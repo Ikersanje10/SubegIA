@@ -40,6 +40,7 @@
   --fontWeight-medium: 500;
   --fontWeight-semiBold: 600;
   --fontWeight-bold: 700;
+  --header-height: 4.3125rem;
 }
 
 * {
@@ -50,7 +51,7 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 5rem;
+  scroll-padding-top: calc(var(--header-height) + 1rem);
 }
 
 body {

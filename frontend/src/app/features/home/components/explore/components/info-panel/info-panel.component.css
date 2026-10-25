@@ -1,7 +1,7 @@
 :host {
   display: block;
   min-width: 0;
-  background: var(--info-panel-background, var(--bg-alternate));
+  background: var(--info-panel-background, var(--surface-panel));
   color: var(--text-secondary);
 }
 

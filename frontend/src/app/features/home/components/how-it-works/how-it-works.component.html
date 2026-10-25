@@ -1,0 +1,30 @@
+<section id="howWorks" class="how-it-works" aria-labelledby="how-it-works-title">
+  <div class="section-inner">
+    <p class="eyebrow">{{ 'howItWorks.eyebrow' | translate }}</p>
+    <h2 id="how-it-works-title">{{ 'howItWorks.title' | translate }}</h2>
+    <p class="introduction">{{ 'howItWorks.introduction' | translate }}</p>
+
+    <ol class="steps" role="list">
+      @for (step of steps; track step) {
+        <li class="step">
+          <p class="step-label">{{ 'howItWorks.steps.' + step + '.label' | translate }}</p>
+          <h3>{{ 'howItWorks.steps.' + step + '.title' | translate }}</h3>
+          <p class="step-description">
+            {{ 'howItWorks.steps.' + step + '.description' | translate }}
+          </p>
+        </li>
+      }
+    </ol>
+
+    <a
+      class="source-link"
+      href="https://forest-fire.emergency.copernicus.eu/about-effis/technical-background/fire-danger-forecast"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {{ 'howItWorks.sourceLink' | translate }}
+      <span aria-hidden="true">↗</span>
+      <span class="visually-hidden">({{ 'howItWorks.opensInNewTab' | translate }})</span>
+    </a>
+  </div>
+</section>

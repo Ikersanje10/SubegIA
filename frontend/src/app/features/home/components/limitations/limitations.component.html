@@ -1,0 +1,21 @@
+<section id="limitations" class="limitations" aria-labelledby="limitations-title">
+  <div class="section-inner">
+    <p class="eyebrow">{{ 'limitations.eyebrow' | translate }}</p>
+    <h2 id="limitations-title">{{ 'limitations.title' | translate }}</h2>
+    <p class="introduction">{{ 'limitations.introduction' | translate }}</p>
+
+    <div class="limitation-cards">
+      @for (topic of topics; track topic) {
+        <article class="limitation-card">
+          <p class="card-label">{{ 'limitations.topics.' + topic + '.label' | translate }}</p>
+          <h3>{{ 'limitations.topics.' + topic + '.title' | translate }}</h3>
+          <p class="card-description">
+            {{ 'limitations.topics.' + topic + '.description' | translate }}
+          </p>
+        </article>
+      }
+    </div>
+
+    <a class="explore-link" href="#explore">{{ 'limitations.backToExplore' | translate }}</a>
+  </div>
+</section>

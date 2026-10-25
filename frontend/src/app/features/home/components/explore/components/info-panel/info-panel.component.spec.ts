@@ -58,9 +58,9 @@ describe('InfoPanelComponent', () => {
   it('links to a focusable limitations explanation on the page', () => {
     const element: HTMLElement = fixture.nativeElement;
     const link = element.querySelector<HTMLAnchorElement>('.safety-notice a');
-    const target = element.querySelector('#limitations');
+    const target = element.querySelector('#map-limitations');
 
-    expect(link?.getAttribute('href')).toBe('#limitations');
+    expect(link?.getAttribute('href')).toBe('#map-limitations');
     expect(target?.getAttribute('tabindex')).toBe('-1');
     expect(target?.textContent).toContain(es.infoPanel.safety.providers);
   });
