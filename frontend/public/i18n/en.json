@@ -1,4 +1,26 @@
 {
+    "mapControls": {
+        "title": "Interactive map",
+        "introduction": "Scroll to keep reading. Activate the map to move around or draw a selection.",
+        "explore": "Explore map",
+        "draw": "Draw area",
+        "close": "Close map",
+        "navigationHint": "Explore the terrain using gestures. Draw an area when you are ready.",
+        "example": "View example area",
+        "showHeatmap": "Show heatmap",
+        "hideHeatmap": "Hide heatmap",
+        "drawing": {
+            "undo": "Undo",
+            "finish": "Finish",
+            "cancel": "Cancel",
+            "instructions": "Corners: {{count}}. Select at least 3 points on the map to create the area. You can undo, finish or cancel.",
+            "notice": "Only points within Gipuzkoa are allowed. Polygon edges and the full area are not validated yet.",
+            "outsideCoverage": "For now, you can only select points within Gipuzkoa.",
+            "coverageUnavailable": "The supported area cannot be checked. Reload the page.",
+            "selectTerrain": "Select a point on the terrain.",
+            "distinctPoint": "Select a point different from the previous ones."
+        }
+    },
     "mapLoading": {
         "message": "Loading the map…",
         "hint": "Preparing terrain and imagery. This may take a few moments.",
@@ -42,12 +64,12 @@
             "fwiSource": "FWI source",
             "fwiSourceValue": "None / fictitious values",
             "drawing": "Mobile drawing",
-            "drawingValue": "Interactive sketch, without geographic validation"
+            "drawingValue": "Points restricted to Gipuzkoa; polygon not validated"
         },
         "design": {
             "title": "For your Figma design",
             "instructions": "Use a screenshot of this view as a background. Design the search, drawing tools and panel as separate components.",
-            "prototype": "This prototype shows navigation, tilt, terrain and terrain-clamped cells. It does not include coverage validation or calculations."
+            "prototype": "This prototype shows navigation, tilt, terrain and terrain-clamped cells. It does not include full polygon validation or calculations."
         },
         "safety": {
             "title": "Educational demo, not an official warning.",

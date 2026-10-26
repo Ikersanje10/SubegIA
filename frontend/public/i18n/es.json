@@ -1,4 +1,26 @@
 {
+    "mapControls": {
+        "title": "Mapa interactivo",
+        "introduction": "Desliza para seguir leyendo. Activa el mapa para moverlo o dibujar una selección.",
+        "explore": "Explorar mapa",
+        "draw": "Dibujar área",
+        "close": "Cerrar mapa",
+        "navigationHint": "Explora el terreno con gestos. Dibuja un área cuando estés listo.",
+        "example": "Ver área de ejemplo",
+        "showHeatmap": "Mostrar heatmap",
+        "hideHeatmap": "Ocultar heatmap",
+        "drawing": {
+            "undo": "Deshacer",
+            "finish": "Finalizar",
+            "cancel": "Cancelar",
+            "instructions": "Esquinas: {{count}}. Selecciona al menos 3 puntos sobre el mapa para crear el área. Puedes deshacer, finalizar o cancelar.",
+            "notice": "Solo se admiten puntos dentro de Gipuzkoa. Los lados y la superficie del polígono aún no se validan.",
+            "outsideCoverage": "De momento, solo puedes seleccionar puntos dentro de Gipuzkoa.",
+            "coverageUnavailable": "No se puede comprobar la zona permitida. Vuelve a cargar la página.",
+            "selectTerrain": "Selecciona un punto sobre el terreno.",
+            "distinctPoint": "Selecciona un punto distinto de los anteriores."
+        }
+    },
     "mapLoading": {
         "message": "Cargando el mapa…",
         "hint": "Preparando el relieve y las imágenes. Puede tardar unos instantes.",
@@ -42,12 +64,12 @@
             "fwiSource": "Fuente del FWI",
             "fwiSourceValue": "Ninguna / valores ficticios",
             "drawing": "Dibujo móvil",
-            "drawingValue": "Boceto interactivo, sin validación geográfica"
+            "drawingValue": "Puntos limitados a Gipuzkoa; polígono sin validar"
         },
         "design": {
             "title": "Para tu diseño en Figma",
             "instructions": "Usa una captura de esta vista como fondo. Diseña el buscador, las herramientas de dibujo y el panel como componentes separados.",
-            "prototype": "Este prototipo muestra navegación, inclinación, relieve y celdas pegadas al terreno. No incluye validación de cobertura ni cálculos."
+            "prototype": "Este prototipo muestra navegación, inclinación, relieve y celdas pegadas al terreno. No incluye validación completa del polígono ni cálculos."
         },
         "safety": {
             "title": "Demo educativa, no aviso oficial.",

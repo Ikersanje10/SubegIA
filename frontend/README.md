@@ -4,6 +4,40 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
 
 ## Map rendering
 
+### Gipuzkoa boundary dataset
+
+`public/geo/gipuzkoa.geojson` contains only Gipuzkoa (province code `20`) from
+geoEuskadi's [Basque Country administrative boundaries dataset](https://www.geo.euskadi.eus/limites-administrativos-del-pais-vasco/webgeo00-content/es/).
+The [source archive](https://www.geo.euskadi.eus/cartografia/DatosDescarga/Limites/TERRITORIOS_5000_ETRS89.zip)
+was downloaded on 2026-10-26 (SHA-256:
+`f42c1819495282a44518a8985fb5fd4928596a6d48118c2ed00559bd9547ab16`).
+
+The source Shapefile was filtered by `PRO_PROV = '20'` and reprojected from
+ETRS89 / UTM zone 30N (EPSG:25830) to WGS 84 longitude/latitude (EPSG:4326).
+The GeoJSON preserves all four polygon parts and 84,413 coordinate positions
+without simplification, in one MultiPolygon feature.
+The map loads `/geo/gipuzkoa.geojson` during initialization, outside Angular,
+through `loadGipuzkoaShape()` and Cesium's GeoJSON loader. Each polygon part is
+displayed as a red terrain-clamped polyline, with no fill. The boundary remains
+visible independently of the example heatmap and drawing controls; the initial
+camera still frames the example area. A boundary loading failure uses the
+existing map error screen. The same loaded polygon parts and holes are retained
+in longitude/latitude for point-in-polygon checks with Turf. Before adding a
+drawing vertex, the terrain position is converted to longitude/latitude; points
+outside Gipuzkoa are rejected with an ES/EU/EN alert without changing the draft.
+Boundary points are included. A missing boundary also blocks vertex entry with
+an explicit message. A subsequent accepted point clears the error.
+This validates vertices only: edges, polygon topology and the full selected
+surface still require validation.
+
+License: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+Attribution: **Eusko Jaurlaritza / Gobierno Vasco. geoEuskadi.**
+The boundary data source displays attribution and the license link in Cesium's
+on-screen credits.
+The publisher states that this dataset does not have the legal status of
+official cartography and that some boundary lines are provisional; it is not
+a property-boundary authority.
+
 Cesium uses on-demand rendering (`requestRenderMode`) with a fixed simulation
 clock. Camera movement, tile loading and viewport resizing trigger Cesium's
 normal render requests; heatmap visibility, drawing edits and asynchronously
@@ -28,6 +62,10 @@ timeout are cleaned up on completion, failure and teardown. Normal map navigatio
 does not restart this loader, and optional 3D buildings do not block readiness.
 
 ## Example information panel
+
+Exploration controls, drawing actions, point-count instructions and drawing
+errors use ES/EU/EN translations. Drawing errors store translation keys so an
+already visible message also updates when the language changes.
 
 The explore view displays the information panel below the map on phones and
 alongside it from 800 CSS pixels upward. It uses the

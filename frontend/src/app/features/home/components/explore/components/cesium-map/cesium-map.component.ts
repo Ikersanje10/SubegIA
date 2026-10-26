@@ -1,6 +1,8 @@
 import { afterNextRender, Component, computed, ElementRef, inject, Injector, NgZone, OnDestroy, signal, viewChild, WritableSignal } from '@angular/core';
 import type { Cartesian2, Cartesian3, CustomDataSource, Entity, ScreenSpaceEventHandler, Viewer } from 'cesium';
 import { TranslatePipe } from '@ngx-translate/core';
+import { booleanPointInPolygon } from '@turf/boolean-point-in-polygon';
+import type { MultiPolygon } from 'geojson';
 import { environment } from '../../../../../../../environments/environment';
 import { createExampleCells, EXAMPLE_AREA_COORDINATES, type Danger, type ExampleCell } from './example-area';
 
@@ -33,6 +35,7 @@ export class CesiumMapComponent implements OnDestroy {
   private readonly vertexEntities: Entity[] = [];
   private mapLoadTimeout?: ReturnType<typeof setTimeout>;
   private cancelMapLoad?: () => void;
+  private gipuzkoaBoundary?: MultiPolygon;
 
   readonly drawing = signal(false);
   readonly drawingPoints = signal<Cartesian3[]>([]);
@@ -216,7 +219,7 @@ export class CesiumMapComponent implements OnDestroy {
     const ray = viewer.camera.getPickRay(position);
     const point = ray && viewer.scene.globe.pick(ray, viewer.scene);
     if (!point) {
-      this.drawingMessage.set('Selecciona un punto sobre el terreno.');
+      this.drawingMessage.set('mapControls.drawing.selectTerrain');
       return;
     }
     this.addDrawingPoint(point);
@@ -226,8 +229,21 @@ export class CesiumMapComponent implements OnDestroy {
     const Cesium = this.Cesium;
     const source = this.drawingSource;
     if (!this.drawing() || !Cesium || !source) return;
+    if (!this.gipuzkoaBoundary) {
+      this.drawingMessage.set('mapControls.drawing.coverageUnavailable');
+      return;
+    }
+    const location = Cesium.Cartographic.fromCartesian(position);
+    const coordinates = [
+      Cesium.Math.toDegrees(location.longitude),
+      Cesium.Math.toDegrees(location.latitude),
+    ];
+    if (!booleanPointInPolygon(coordinates, this.gipuzkoaBoundary)) {
+      this.drawingMessage.set('mapControls.drawing.outsideCoverage');
+      return;
+    }
     if (this.drawingPoints().some(point => Cesium.Cartesian3.equals(point, position))) {
-      this.drawingMessage.set('Selecciona un punto distinto de los anteriores.');
+      this.drawingMessage.set('mapControls.drawing.distinctPoint');
       return;
     }
 
@@ -339,6 +355,51 @@ export class CesiumMapComponent implements OnDestroy {
     });
   }
 
+  private async loadGipuzkoaShape(Cesium: typeof import('cesium')) {
+    const color = Cesium.Color.fromCssColorString('#c93535');
+    const source = await Cesium.GeoJsonDataSource.load('/geo/gipuzkoa.geojson', {
+      clampToGround: true,
+      credit: new Cesium.Credit(
+        '<a href="https://www.geo.euskadi.eus/limites-administrativos-del-pais-vasco/webgeo00-content/es/">'
+        + 'Eusko Jaurlaritza / Gobierno Vasco. geoEuskadi.</a>'
+        + ' &middot; <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>',
+        true,
+      ),
+    });
+
+    if (source.entities.values.length === 0) throw new Error('Missing Gipuzkoa boundary');
+
+    const boundary: MultiPolygon = { type: 'MultiPolygon', coordinates: [] };
+    for (const entity of source.entities.values) {
+      const hierarchy: import('cesium').PolygonHierarchy | undefined =
+        entity.polygon?.hierarchy?.getValue();
+      if (!hierarchy) throw new Error('Missing Gipuzkoa boundary polygon');
+
+      boundary.coordinates.push([hierarchy, ...hierarchy.holes].map(ring =>
+        ring.positions.map(position => {
+          const location = Cesium.Cartographic.fromCartesian(position);
+          return [
+            Cesium.Math.toDegrees(location.longitude),
+            Cesium.Math.toDegrees(location.latitude),
+          ];
+        }),
+      ));
+
+      // Ground-clamped polygon outlines are not supported; use a terrain-following line.
+      entity.polyline = new Cesium.PolylineGraphics({
+        positions: hierarchy.positions,
+        width: 3,
+        material: color,
+        clampToGround: true,
+        classificationType: Cesium.ClassificationType.TERRAIN,
+      });
+      entity.polygon = undefined;
+    }
+
+    this.gipuzkoaBoundary = boundary;
+    return source;
+  }
+
   private async initMap() {
     const container = this.mapEl().nativeElement; // read it before any await
     const creditContainer = this.mapCredits().nativeElement;
@@ -348,78 +409,83 @@ export class CesiumMapComponent implements OnDestroy {
       45_000,
     );
     try {
-    const Cesium = await import('cesium'); // loaded only in the browser, in its own chunk
-    this.Cesium = Cesium;
-    if (this.destroyed || this.mapError()) return;
-
-    await this.zone.runOutsideAngular(async () => {
-      Cesium.Ion.defaultAccessToken = environment.cesiumIonToken;
-      const terrainProvider = await Cesium.createWorldTerrainAsync();
+      const Cesium = await import('cesium'); // loaded only in the browser, in its own chunk
+      this.Cesium = Cesium;
       if (this.destroyed || this.mapError()) return;
 
-      const viewer = new Cesium.Viewer(container, {
-        creditContainer,
-        terrainProvider,
-        requestRenderMode: true,
-        maximumRenderTimeChange: Number.POSITIVE_INFINITY,
-        shouldAnimate: false,
-        animation: false,
-        infoBox: false,
-        selectionIndicator: false,
-        timeline: false,
-        baseLayerPicker: false,
-        geocoder: false,
-        homeButton: false,
-        sceneModePicker: false,
-        navigationHelpButton: false,
-        fullscreenButton: false,
+      await this.zone.runOutsideAngular(async () => {
+        Cesium.Ion.defaultAccessToken = environment.cesiumIonToken;
+        const terrainProvider = await Cesium.createWorldTerrainAsync();
+        if (this.destroyed || this.mapError()) return;
+
+        const viewer = new Cesium.Viewer(container, {
+          creditContainer,
+          terrainProvider,
+          requestRenderMode: true,
+          maximumRenderTimeChange: Number.POSITIVE_INFINITY,
+          shouldAnimate: false,
+          animation: false,
+          infoBox: false,
+          selectionIndicator: false,
+          timeline: false,
+          baseLayerPicker: false,
+          geocoder: false,
+          homeButton: false,
+          sceneModePicker: false,
+          navigationHelpButton: false,
+          fullscreenButton: false,
+        });
+        this.viewer = viewer;
+        this.drawingSource = new Cesium.CustomDataSource('drawn-areas');
+        viewer.dataSources.add(this.drawingSource)
+          .catch((error) => console.error('Could not add the drawing layer', error));
+        this.drawingHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+        this.drawingHandler.setInputAction(
+          (event: ScreenSpaceEventHandler.PositionedEvent) => {
+            this.zone.run(() => this.pickDrawingPoint(event.position));
+          },
+          Cesium.ScreenSpaceEventType.LEFT_CLICK,
+        );
+        if (this.drawing()) this.createDraft();
+
+        const scene = viewer.scene;
+        scene.globe.enableLighting = true;
+        scene.verticalExaggeration = 1.5;
+        scene.globe.depthTestAgainstTerrain = true;
+
+        this.exampleArea = viewer.entities.add(this.createExampleArea(Cesium));
+        for (const cell of this.cells.map(cell => this.createCell(Cesium, cell))) {
+          viewer.entities.add(cell);
+        }
+
+        const gipuzkoa = await this.loadGipuzkoaShape(Cesium);
+        if (this.destroyed || this.mapError()) return;
+        await viewer.dataSources.add(gipuzkoa);
+        this.requestMapRender();
+
+        // Morning sun: low light from the east makes the relief stand out
+        viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2026-06-21T10:00:00Z');
+
+        // 3D buildings (OpenStreetMap). Loaded in the background so the map appears first.
+        Cesium.createOsmBuildingsAsync()
+          .then((buildings) => {
+            if (this.destroyed || !this.viewer || this.viewer.isDestroyed()) return;
+            this.viewer.scene.primitives.add(buildings);
+            this.requestMapRender();
+          })
+          .catch((error) => console.error('Could not load 3D buildings', error));
+
+        // A zero range lets Cesium fit the whole area, even when its coordinates change.
+        const framing = viewer.zoomTo(
+          this.exampleArea,
+          new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-35), 3000),
+        );
+        await this.waitForGlobeTiles(viewer, framing);
+        if (!this.destroyed && !this.mapError()) {
+          this.zone.run(() => this.mapLoading.set(false));
+        }
       });
-      this.viewer = viewer;
-      this.drawingSource = new Cesium.CustomDataSource('drawn-areas');
-      viewer.dataSources.add(this.drawingSource)
-        .catch((error) => console.error('Could not add the drawing layer', error));
-      this.drawingHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-      this.drawingHandler.setInputAction(
-        (event: ScreenSpaceEventHandler.PositionedEvent) => {
-          this.zone.run(() => this.pickDrawingPoint(event.position));
-        },
-        Cesium.ScreenSpaceEventType.LEFT_CLICK,
-      );
-      if (this.drawing()) this.createDraft();
-
-      const scene = viewer.scene;
-      scene.globe.enableLighting = true;
-      scene.verticalExaggeration = 1.5;
-      scene.globe.depthTestAgainstTerrain = true;
-
-      this.exampleArea = viewer.entities.add(this.createExampleArea(Cesium));
-      for (const cell of this.cells.map(cell => this.createCell(Cesium, cell))) {
-        viewer.entities.add(cell);
-      }
-
-      // Morning sun: low light from the east makes the relief stand out
-      viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2026-06-21T10:00:00Z');
-
-      // 3D buildings (OpenStreetMap). Loaded in the background so the map appears first.
-      Cesium.createOsmBuildingsAsync()
-        .then((buildings) => {
-          if (this.destroyed || !this.viewer || this.viewer.isDestroyed()) return;
-          this.viewer.scene.primitives.add(buildings);
-          this.requestMapRender();
-        })
-        .catch((error) => console.error('Could not load 3D buildings', error));
-
-      // A zero range lets Cesium fit the whole area, even when its coordinates change.
-      const framing = viewer.zoomTo(
-        this.exampleArea,
-        new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-35), 3000),
-      );
-      await this.waitForGlobeTiles(viewer, framing);
-      if (!this.destroyed && !this.mapError()) {
-        this.zone.run(() => this.mapLoading.set(false));
-      }
-    });
-    this.applyInteraction();
+      this.applyInteraction();
     } catch (error) {
       this.failMapLoad(error);
     } finally {

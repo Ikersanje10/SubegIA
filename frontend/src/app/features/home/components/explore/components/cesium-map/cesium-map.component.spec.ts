@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideTranslateService, TranslateService } from '@ngx-translate/core';
 import { vi } from 'vitest';
 import * as Cesium from 'cesium';
+import type { MultiPolygon } from 'geojson';
 import { CesiumMapComponent } from './cesium-map.component';
 import { createExampleCells, EXAMPLE_AREA_COORDINATES, type Coordinate } from './example-area';
 import es from '../../../../../../../../public/i18n/es.json';
@@ -9,6 +10,12 @@ import en from '../../../../../../../../public/i18n/en.json';
 import eu from '../../../../../../../../public/i18n/eu.json';
 
 describe('CesiumMapComponent', () => {
+  const drawingBoundary: MultiPolygon = {
+    type: 'MultiPolygon',
+    coordinates: [[[
+      [-2.6, 43], [-2.3, 43], [-2.3, 43.2], [-2.6, 43.2], [-2.6, 43],
+    ]]],
+  };
   const initializeMap = CesiumMapComponent.prototype['initMap'];
   let component: CesiumMapComponent;
   let fixture: ComponentFixture<CesiumMapComponent>;
@@ -36,6 +43,96 @@ describe('CesiumMapComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  describe('Gipuzkoa boundary', () => {
+    it('loads all polygon parts as closed red terrain-following borders with visible attribution', async () => {
+      const rings = [-2.5, -2.3, -2.1, -1.9].map(longitude => [[
+        [longitude, 43],
+        [longitude + 0.05, 43],
+        [longitude + 0.05, 43.05],
+        [longitude, 43],
+      ]]);
+      const source = await Cesium.GeoJsonDataSource.load({
+        type: 'Feature',
+        properties: { name: 'Gipuzkoa' },
+        geometry: { type: 'MultiPolygon', coordinates: rings },
+      });
+      const load = vi.spyOn(Cesium.GeoJsonDataSource, 'load').mockResolvedValue(source);
+      try {
+        const boundary = await component['loadGipuzkoaShape'](Cesium);
+        expect(load).toHaveBeenCalledWith('/geo/gipuzkoa.geojson', expect.objectContaining({
+          clampToGround: true,
+        }));
+        const credit = load.mock.calls[0][1]?.credit;
+        expect(credit).toBeInstanceOf(Cesium.Credit);
+        if (!(credit instanceof Cesium.Credit)) throw new Error('Missing boundary credit');
+        expect(credit.showOnScreen).toBe(true);
+        expect(credit.html).toContain('Eusko Jaurlaritza / Gobierno Vasco');
+        expect(credit.html).toContain('https://creativecommons.org/licenses/by/4.0/');
+
+        expect(boundary.entities.values).toHaveLength(4);
+        expect(component['gipuzkoaBoundary']?.coordinates).toHaveLength(4);
+        expect(component['gipuzkoaBoundary']?.type).toBe('MultiPolygon');
+        for (const entity of boundary.entities.values) {
+          expect(entity.polygon).toBeUndefined();
+          const border = entity.polyline;
+          expect(border?.clampToGround?.getValue()).toBe(true);
+          expect(border?.classificationType?.getValue()).toBe(Cesium.ClassificationType.TERRAIN);
+          expect(border?.width?.getValue()).toBe(3);
+          expect(border?.material?.getValue(Cesium.JulianDate.now()).color)
+            .toEqual(Cesium.Color.fromCssColorString('#c93535'));
+          const positions: Cesium.Cartesian3[] = border!.positions!.getValue();
+          expect(positions).toHaveLength(4);
+          expect(positions[0]).toEqual(positions[positions.length - 1]);
+        }
+      } finally {
+        load.mockRestore();
+      }
+    });
+
+    it('preserves polygon holes for coverage checks', async () => {
+      const source = await Cesium.GeoJsonDataSource.load({
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [[-3, 43], [-2, 43], [-2, 44], [-3, 44], [-3, 43]],
+            [[-2.8, 43.2], [-2.8, 43.8], [-2.2, 43.8], [-2.2, 43.2], [-2.8, 43.2]],
+          ],
+        },
+      });
+      const load = vi.spyOn(Cesium.GeoJsonDataSource, 'load').mockResolvedValue(source);
+      try {
+        await component['loadGipuzkoaShape'](Cesium);
+        expect(component['gipuzkoaBoundary']?.coordinates[0]).toHaveLength(2);
+      } finally {
+        load.mockRestore();
+      }
+    });
+
+    it('propagates loading errors to the map initialization error handler', async () => {
+      const error = new Error('Boundary download failed');
+      const load = vi.spyOn(Cesium.GeoJsonDataSource, 'load').mockRejectedValue(error);
+      try {
+        await expect(component['loadGipuzkoaShape'](Cesium)).rejects.toBe(error);
+      } finally {
+        load.mockRestore();
+      }
+    });
+
+    it('rejects empty data and features without polygon geometry', async () => {
+      const source = new Cesium.GeoJsonDataSource();
+      const load = vi.spyOn(Cesium.GeoJsonDataSource, 'load').mockResolvedValue(source);
+      try {
+        await expect(component['loadGipuzkoaShape'](Cesium)).rejects.toThrow('Missing Gipuzkoa boundary');
+        source.entities.add(new Cesium.Entity());
+        await expect(component['loadGipuzkoaShape'](Cesium)).rejects.toThrow('Missing Gipuzkoa boundary polygon');
+      } finally {
+        load.mockRestore();
+      }
+    });
   });
 
   describe('initial map loading', () => {
@@ -384,9 +481,69 @@ describe('CesiumMapComponent', () => {
     const buttons = element.querySelectorAll('.mapExampleControls button');
 
     expect(buttons).toHaveLength(2);
-    expect(buttons[0].textContent?.trim()).toBe('Ver area de ejemplo');
-    expect(buttons[1].textContent?.trim()).toBe('Ocultar heatmap');
+    expect(buttons[0].textContent?.trim()).toBe(es.mapControls.example);
+    expect(buttons[1].textContent?.trim()).toBe(es.mapControls.hideHeatmap);
     expect(element.textContent).not.toContain('Centrar terreno');
+  });
+
+  it('updates exploration and drawing controls, counts and existing errors when switching languages', async () => {
+    const translate = TestBed.inject(TranslateService);
+    const element: HTMLElement = fixture.nativeElement;
+    component.toggleInteraction();
+    component.drawArea();
+    component.drawingPoints.set([
+      Cesium.Cartesian3.fromDegrees(-2.49, 43.08),
+      Cesium.Cartesian3.fromDegrees(-2.48, 43.08),
+    ]);
+
+    for (const [language, translations] of Object.entries({ es, en, eu })) {
+      translate.setTranslation(language, translations);
+      translate.use(language);
+      await fixture.whenStable();
+      const controls = translations.mapControls;
+      const labels = [
+        ['.textContainer .title', controls.title],
+        ['.textContainer .description', controls.introduction],
+        ['.toggleMapInteraction', controls.explore],
+        ['.drawArea', controls.draw],
+        ['.mapControls:not(.drawingPanel) .closeMap', controls.close],
+        ['.mapControls:not(.drawingPanel) > p', controls.navigationHint],
+        ['.example-area-button', controls.example],
+        ['.drawingPanel > .closeMap', controls.close],
+        ['.drawingPanel > p:not([role])', controls.drawing.notice],
+      ];
+      for (const [selector, expected] of labels) {
+        expect(element.querySelector(selector)?.textContent?.trim()).toBe(expected);
+      }
+      const actions = element.querySelectorAll('.drawingActions button');
+      expect(Array.from(actions, button => button.textContent?.trim())).toEqual([
+        controls.drawing.undo, controls.drawing.finish, controls.drawing.cancel,
+      ]);
+      expect(element.querySelector('.drawingPanel [role="status"]')?.textContent?.trim())
+        .toBe(controls.drawing.instructions.replace('{{count}}', '2'));
+
+      for (const hidden of [true, false]) {
+        component.hiddeHeatMap.set(hidden);
+        await fixture.whenStable();
+        expect(element.querySelector('.heatmap-button')?.textContent?.trim())
+          .toBe(hidden ? controls.showHeatmap : controls.hideHeatmap);
+      }
+    }
+
+    component.drawingMessage.set('mapControls.drawing.distinctPoint');
+    for (const [language, translations] of Object.entries({ es, en, eu })) {
+      translate.use(language);
+      await fixture.whenStable();
+      expect(element.querySelector('.drawingPanel [role="alert"]')?.textContent?.trim())
+        .toBe(translations.mapControls.drawing.distinctPoint);
+    }
+    component.drawingMessage.set('mapControls.drawing.selectTerrain');
+    for (const [language, translations] of Object.entries({ es, en, eu })) {
+      translate.use(language);
+      await fixture.whenStable();
+      expect(element.querySelector('.drawingPanel [role="alert"]')?.textContent?.trim())
+        .toBe(translations.mapControls.drawing.selectTerrain);
+    }
   });
 
   it('shows six ordered legend swatches matching the example map colors in every language', async () => {
@@ -665,6 +822,7 @@ describe('CesiumMapComponent', () => {
       });
       component['Cesium'] = Cesium;
       component['drawingSource'] = new Cesium.CustomDataSource('test-on-demand');
+      component['gipuzkoaBoundary'] = drawingBoundary;
       component['exampleArea'] = component['createExampleArea'](Cesium);
     });
 
@@ -741,13 +899,14 @@ describe('CesiumMapComponent', () => {
       source = new Cesium.CustomDataSource('test-drawing');
       component['Cesium'] = Cesium;
       component['drawingSource'] = source;
+      component['gipuzkoaBoundary'] = drawingBoundary;
       exampleArea = component['createExampleArea'](Cesium);
       component['exampleArea'] = exampleArea;
       component.toggleInteraction();
     });
 
     it('should replace the normal controls with the drawing panel and disabled actions', async () => {
-      button('Dibujar area').click();
+      button(es.mapControls.draw).click();
       await fixture.whenStable();
       const element: HTMLElement = fixture.nativeElement;
 
@@ -755,11 +914,99 @@ describe('CesiumMapComponent', () => {
       expect(element.querySelector('.mapControls:not(.drawingPanel)')?.classList.contains('hidden')).toBe(true);
       expect(element.querySelector('.mapExampleControls')?.classList.contains('hidden')).toBe(true);
       expect(element.querySelector('.drawingPanel')?.classList.contains('hidden')).toBe(false);
-      expect(element.querySelector('[role="status"]')?.textContent).toContain('0 esquinas');
+      expect(element.querySelector('[role="status"]')?.textContent)
+        .toContain(es.mapControls.drawing.instructions.replace('{{count}}', '0'));
       expect(button('Deshacer').disabled).toBe(true);
       expect(button('Finalizar').disabled).toBe(true);
       expect(exampleArea.show).toBe(false);
       expect(source.entities.getById('drawing-draft')).toBeDefined();
+    });
+
+    it('rejects an outside click without changing the draft, translates the alert and clears it on a valid point', async () => {
+      component.drawArea();
+      addPoints(1);
+      const before = [...source.entities.values];
+      const viewer = {
+        camera: { getPickRay: () => new Cesium.Ray() },
+        scene: {
+          globe: { pick: () => Cesium.Cartesian3.fromDegrees(-2.9, 43.25) },
+          requestRender: vi.fn(),
+        },
+        isDestroyed: () => false,
+        destroy: vi.fn(),
+      };
+      Object.defineProperty(component, 'viewer', { value: viewer, writable: true });
+      component['pickDrawingPoint'](new Cesium.Cartesian2(10, 20));
+      expect(component.pointCount()).toBe(1);
+      expect(source.entities.values).toEqual(before);
+      expect(component.drawingMessage()).toBe('mapControls.drawing.outsideCoverage');
+      expect(viewer.scene.requestRender).not.toHaveBeenCalled();
+      const translate = TestBed.inject(TranslateService);
+      for (const [language, translations] of Object.entries({ es, en, eu })) {
+        translate.setTranslation(language, translations);
+        translate.use(language);
+        await fixture.whenStable();
+        expect(fixture.nativeElement.querySelector('.drawingPanel [role="alert"]')?.textContent?.trim())
+          .toBe(translations.mapControls.drawing.outsideCoverage);
+      }
+      component['addDrawingPoint'](positions[1]);
+      await fixture.whenStable();
+      expect(component.pointCount()).toBe(2);
+      expect(component.drawingMessage()).toBe('');
+      expect(fixture.nativeElement.querySelector('.drawingPanel [role="alert"]')).toBeNull();
+    });
+
+    it('blocks points when the coverage boundary is unavailable', async () => {
+      component['gipuzkoaBoundary'] = undefined;
+      component.drawArea();
+      addPoints(1);
+      await fixture.whenStable();
+      expect(component.pointCount()).toBe(0);
+      expect(source.entities.values.filter(entity => entity.point)).toHaveLength(0);
+      expect(fixture.nativeElement.querySelector('.drawingPanel [role="alert"]')?.textContent?.trim())
+        .toBe(es.mapControls.drawing.coverageUnavailable);
+    });
+
+    it('checks concave outlines, holes and disconnected parts rather than a bounding rectangle', () => {
+      component['gipuzkoaBoundary'] = {
+        type: 'MultiPolygon',
+        coordinates: [
+          [
+            [[-3, 43], [-2, 43], [-2, 43.4], [-2.6, 43.4], [-2.6, 44], [-3, 44], [-3, 43]],
+            [[-2.9, 43.1], [-2.9, 43.3], [-2.7, 43.3], [-2.7, 43.1], [-2.9, 43.1]],
+          ],
+          [[[-1.9, 43], [-1.8, 43], [-1.8, 43.1], [-1.9, 43.1], [-1.9, 43]]],
+        ],
+      };
+      component.drawArea();
+      for (const [longitude, latitude, expectedCount] of [
+        [-2.95, 43.5, 1],
+        [-2.3, 43.7, 1],
+        [-2.8, 43.2, 1],
+        [-1.85, 43.05, 2],
+      ]) {
+        component['addDrawingPoint'](Cesium.Cartesian3.fromDegrees(longitude, latitude));
+        expect(component.pointCount()).toBe(expectedCount);
+      }
+    });
+
+    it('accepts a boundary vertex and ignores terrain altitude when checking coverage', () => {
+      const vertex = Cesium.Cartesian3.fromDegrees(-2.6, 43);
+      const location = Cesium.Cartographic.fromCartesian(vertex);
+      const longitude = Cesium.Math.toDegrees(location.longitude);
+      const latitude = Cesium.Math.toDegrees(location.latitude);
+      component['gipuzkoaBoundary'] = {
+        type: 'MultiPolygon',
+        coordinates: [[[
+          [longitude, latitude], [-2.3, latitude], [-2.3, 43.2],
+          [longitude, 43.2], [longitude, latitude],
+        ]]],
+      };
+      component.drawArea();
+      component['addDrawingPoint'](vertex);
+      component['addDrawingPoint'](Cesium.Cartesian3.fromDegrees(-2.48, 43.08, 1500));
+      expect(component.pointCount()).toBe(2);
+      expect(component.drawingMessage()).toBe('');
     });
 
     it('should count points, preview the shape, and enable finishing at exactly three', async () => {
@@ -776,7 +1023,8 @@ describe('CesiumMapComponent', () => {
         expect(draft.polygon!.show!.getValue(time)).toBe(index >= 2);
         expect(draft.polyline!.show!.getValue(time)).toBe(index >= 1);
         const element: HTMLElement = fixture.nativeElement;
-        expect(element.querySelector('[role="status"]')?.textContent).toContain(`${index + 1} esquinas`);
+        expect(element.querySelector('[role="status"]')?.textContent)
+          .toContain(es.mapControls.drawing.instructions.replace('{{count}}', String(index + 1)));
       }
       expect(draft.polyline!.positions!.getValue(time)).toEqual([...positions, positions[0]]);
       expect(draft.polygon!.hierarchy!.getValue(time).positions).toEqual(positions);
@@ -896,12 +1144,12 @@ describe('CesiumMapComponent', () => {
 
       component['pickDrawingPoint'](screenPosition);
       expect(component.pointCount()).toBe(1);
-      expect(component.drawingMessage()).toContain('punto distinto');
+      expect(component.drawingMessage()).toBe('mapControls.drawing.distinctPoint');
 
       pick.mockReturnValue(undefined);
       component['pickDrawingPoint'](screenPosition);
       expect(component.pointCount()).toBe(1);
-      expect(component.drawingMessage()).toContain('sobre el terreno');
+      expect(component.drawingMessage()).toBe('mapControls.drawing.selectTerrain');
     });
 
     it('should release its click handler when destroyed', () => {

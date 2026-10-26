@@ -48,9 +48,9 @@
     </aside>
     <div class="exploreMapContainer" [class.hidden]="interactive()">
       <div class="textContainer">
-        <p class="title">Mapa interactivo</p>
+        <p class="title">{{ 'mapControls.title' | translate }}</p>
         <p class="description">
-          Desliza para seguir leyendo. Activa el mapa para moverlo o dibujar una seleccion
+          {{ 'mapControls.introduction' | translate }}
         </p>
       </div>
       <button
@@ -59,46 +59,45 @@
         (click)="toggleInteraction()"
         [attr.aria-expanded]="interactive()"
       >
-        Explorar Mapa
+        {{ 'mapControls.explore' | translate }}
       </button>
     </div>
     <div class="mapControls" [class.hidden]="!interactive() || drawing()">
       <div class="controlButtonsContainer">
-        <button #drawButton class="drawArea" (click)="drawArea()">Dibujar area</button>
-        <button class="closeMap" (click)="toggleInteraction()">Cerrar mapa</button>
+        <button #drawButton class="drawArea" (click)="drawArea()">{{ 'mapControls.draw' | translate }}</button>
+        <button class="closeMap" (click)="toggleInteraction()">{{ 'mapControls.close' | translate }}</button>
       </div>
-      <p>Explora el terreno con gestos. Dibuja un area cuando estes listo.</p>
+      <p>{{ 'mapControls.navigationHint' | translate }}</p>
     </div>
 
     <div class="mapControls drawingPanel" [class.hidden]="!interactive() || !drawing()">
       <button #drawingCloseButton class="closeMap" (click)="toggleInteraction()">
-        Cerrar mapa
+        {{ 'mapControls.close' | translate }}
       </button>
       <div class="drawingActions">
         <button class="closeMap" (click)="undoDrawingPoint()" [disabled]="pointCount() === 0">
-          Deshacer
+          {{ 'mapControls.drawing.undo' | translate }}
         </button>
         <button class="closeMap" (click)="finishDrawing()" [disabled]="!canFinishDrawing()">
-          Finalizar
+          {{ 'mapControls.drawing.finish' | translate }}
         </button>
-        <button class="closeMap" (click)="cancelDrawing()">Cancelar</button>
+        <button class="closeMap" (click)="cancelDrawing()">{{ 'mapControls.drawing.cancel' | translate }}</button>
       </div>
       <p role="status" aria-live="polite" aria-atomic="true">
-        {{ pointCount() }} esquinas. Selecciona al menos 3 puntos sobre el mapa para crear el area.
-        Puedes deshacer, finalizar o cancelar.
+        {{ 'mapControls.drawing.instructions' | translate: { count: pointCount() } }}
       </p>
-      <p>Boceto sin validacion geografica.</p>
+      <p>{{ 'mapControls.drawing.notice' | translate }}</p>
       @if (drawingMessage()) {
-        <p role="alert">{{ drawingMessage() }}</p>
+        <p role="alert">{{ drawingMessage() | translate }}</p>
       }
     </div>
 
     <div class="mapExampleControls" [class.hidden]="!interactive() || drawing()">
       <button class="mapExampleControlsButton example-area-button" (click)="showExampleArea()">
-        Ver area de ejemplo
+        {{ 'mapControls.example' | translate }}
       </button>
       <button class="mapExampleControlsButton heatmap-button" (click)="toggleHeatMap()">
-        {{ hiddeHeatMap() ? 'Mostrar heatmap' : 'Ocultar heatmap' }}
+        {{ (hiddeHeatMap() ? 'mapControls.showHeatmap' : 'mapControls.hideHeatmap') | translate }}
       </button>
     </div>
   </div>

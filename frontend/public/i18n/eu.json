@@ -1,4 +1,26 @@
 {
+    "mapControls": {
+        "title": "Mapa interaktiboa",
+        "introduction": "Jarraitu orria mugitzen irakurtzen jarraitzeko. Aktibatu mapa bertan mugitzeko edo eremu bat marrazteko.",
+        "explore": "Arakatu mapa",
+        "draw": "Marraztu eremua",
+        "close": "Itxi mapa",
+        "navigationHint": "Arakatu erliebea keinuen bidez. Marraztu eremu bat prest zaudenean.",
+        "example": "Ikusi adibideko eremua",
+        "showHeatmap": "Erakutsi bero-mapa",
+        "hideHeatmap": "Ezkutatu bero-mapa",
+        "drawing": {
+            "undo": "Desegin",
+            "finish": "Amaitu",
+            "cancel": "Utzi",
+            "instructions": "Erpinak: {{count}}. Hautatu gutxienez 3 puntu mapan eremua sortzeko. Desegin, amaitu edo bertan behera utz dezakezu.",
+            "notice": "Gipuzkoa barruko puntuak soilik onartzen dira. Poligonoaren ertzak eta azalera osoa oraindik ez dira baliozkotzen.",
+            "outsideCoverage": "Oraingoz, Gipuzkoa barruko puntuak bakarrik hauta ditzakezu.",
+            "coverageUnavailable": "Ezin da baimendutako eremua egiaztatu. Kargatu orria berriro.",
+            "selectTerrain": "Hautatu puntu bat lurrean.",
+            "distinctPoint": "Hautatu aurrekoez bestelako puntu bat."
+        }
+    },
     "mapLoading": {
         "message": "Mapa kargatzen…",
         "hint": "Erliebea eta irudiak prestatzen. Baliteke une batzuk behar izatea.",
@@ -42,12 +64,12 @@
             "fwiSource": "FWIaren iturria",
             "fwiSourceValue": "Bat ere ez / fikziozko balioak",
             "drawing": "Mugikorreko marrazketa",
-            "drawingValue": "Zirriborro interaktiboa, baliozkotze geografikorik gabe"
+            "drawingValue": "Puntuak Gipuzkoara mugatuta; poligonoa baliozkotu gabe"
         },
         "design": {
             "title": "Zure Figma diseinurako",
             "instructions": "Erabili ikuspegi honen pantaila-argazkia atzeko plano gisa. Diseinatu bilatzailea, marrazketa-tresnak eta panela osagai bereizi gisa.",
-            "prototype": "Prototipo honek nabigazioa, inklinazioa, erliebea eta lurrari itsatsitako gelaxkak erakusten ditu. Ez du estaldura-baliozkotzerik edo kalkulurik egiten."
+            "prototype": "Prototipo honek nabigazioa, inklinazioa, erliebea eta lurrari itsatsitako gelaxkak erakusten ditu. Ez du poligonoaren baliozkotze osorik edo kalkulurik egiten."
         },
         "safety": {
             "title": "Hezkuntza-demoa, ez abisu ofiziala.",
