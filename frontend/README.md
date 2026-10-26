@@ -27,8 +27,17 @@ drawing vertex, the terrain position is converted to longitude/latitude; points
 outside Gipuzkoa are rejected with an ES/EU/EN alert without changing the draft.
 Boundary points are included. A missing boundary also blocks vertex entry with
 an explicit message. A subsequent accepted point clears the error.
-This validates vertices only: edges, polygon topology and the full selected
-surface still require validation.
+Drawing preserves click order. Each candidate outline, including its closing
+edge, is checked for crossings, nonadjacent touches, overlapping sides and
+zero-area geometry using robust orientation predicates. Invalid points leave
+the existing draft unchanged and show a translated error. Finalization repeats
+the outline check before replacing the previous selection.
+Checking that every edge and the full selected surface stay within Gipuzkoa
+is still pending.
+
+There is one active selected area. To replace it, draw and finish another;
+cancelling a new draft preserves the previous selection. No separate delete
+control or multiple-area workflow is included in this increment.
 
 License: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 Attribution: **Eusko Jaurlaritza / Gobierno Vasco. geoEuskadi.**

@@ -967,6 +967,60 @@ describe('CesiumMapComponent', () => {
         .toBe(es.mapControls.drawing.coverageUnavailable);
     });
 
+    it('rejects a crossed fourth point, preserves click order and allows recovery using undo', async () => {
+      component.drawArea();
+      for (const index of [0, 2, 3]) component['addDrawingPoint'](positions[index]);
+      const before = [...source.entities.values];
+      component['addDrawingPoint'](positions[1]);
+      await fixture.whenStable();
+
+      expect(component.drawingPoints()).toEqual([positions[0], positions[2], positions[3]]);
+      expect(source.entities.values).toEqual(before);
+      expect(component.drawingMessage()).toBe('mapControls.drawing.invalidOutline');
+      const translate = TestBed.inject(TranslateService);
+      for (const [language, translations] of Object.entries({ es, en, eu })) {
+        translate.setTranslation(language, translations);
+        translate.use(language);
+        await fixture.whenStable();
+        expect(fixture.nativeElement.querySelector('.drawingPanel [role="alert"]')?.textContent?.trim())
+          .toBe(translations.mapControls.drawing.invalidOutline);
+      }
+
+      component.undoDrawingPoint();
+      component.undoDrawingPoint();
+      for (const point of positions.slice(1)) component['addDrawingPoint'](point);
+      expect(component.drawingPoints()).toEqual(positions);
+      expect(component.drawingMessage()).toBe('');
+      component.finishDrawing();
+      expect(source.entities.getById('drawn-area')?.polygon?.hierarchy?.getValue().positions)
+        .toEqual(positions);
+    });
+
+    it('also rejects crossings introduced by the closing side', () => {
+      component.drawArea();
+      for (const index of [0, 1, 3]) component['addDrawingPoint'](positions[index]);
+      component['addDrawingPoint'](positions[2]);
+      expect(component.drawingPoints()).toEqual([positions[0], positions[1], positions[3]]);
+      expect(component.drawingMessage()).toBe('mapControls.drawing.invalidOutline');
+    });
+
+    it('rechecks geometry on finish without deleting the previous selection on failure', () => {
+      const previous = source.entities.add({ id: 'drawn-area' });
+      component.drawArea();
+      component.drawingPoints.set([positions[0], positions[2], positions[3], positions[1]]);
+      expect(component.canFinishDrawing()).toBe(false);
+      component.finishDrawing();
+      expect(source.entities.getById('drawn-area')).toBe(previous);
+      expect(component.drawing()).toBe(true);
+      expect(component.drawingMessage()).toBe('mapControls.drawing.invalidOutline');
+
+      component.drawingPoints.set([...positions]);
+      expect(component.canFinishDrawing()).toBe(true);
+      component.finishDrawing();
+      expect(source.entities.getById('drawn-area')).not.toBe(previous);
+      expect(component.drawing()).toBe(false);
+    });
+
     it('checks concave outlines, holes and disconnected parts rather than a bounding rectangle', () => {
       component['gipuzkoaBoundary'] = {
         type: 'MultiPolygon',

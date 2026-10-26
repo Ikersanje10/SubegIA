@@ -5,7 +5,7 @@
         "explore": "Arakatu mapa",
         "draw": "Marraztu eremua",
         "close": "Itxi mapa",
-        "navigationHint": "Arakatu erliebea keinuen bidez. Marraztu eremu bat prest zaudenean.",
+        "navigationHint": "Arakatu erliebea keinuen bidez. Hautaketa aldatzeko, marraztu beste eremu bat: amaitzean aurrekoa ordezkatuko du.",
         "example": "Ikusi adibideko eremua",
         "showHeatmap": "Erakutsi bero-mapa",
         "hideHeatmap": "Ezkutatu bero-mapa",
@@ -13,8 +13,9 @@
             "undo": "Desegin",
             "finish": "Amaitu",
             "cancel": "Utzi",
-            "instructions": "Erpinak: {{count}}. Hautatu gutxienez 3 puntu mapan eremua sortzeko. Desegin, amaitu edo bertan behera utz dezakezu.",
-            "notice": "Gipuzkoa barruko puntuak soilik onartzen dira. Poligonoaren ertzak eta azalera osoa oraindik ez dira baliozkotzen.",
+            "instructions": "Erpinak: {{count}}. Hautatu gutxienez 3 puntu inguruneari jarraituz, ordenan eta ertzak gurutzatu gabe. Desegin, amaitu edo bertan behera utz dezakezu.",
+            "notice": "Gipuzkoa barruko puntuak eta gurutzaketarik gabeko inguruak soilik onartzen dira. Oraindik ez da egiaztatzen ertzak eta azalera osoa Gipuzkoa barruan daudenik.",
+            "invalidOutline": "Inguru horrek gurutzaketak edo gainjarritako ertzak ditu, edo ez du azalerarik osatzen. Hautatu erpinak mugari jarraituz, ertzak gurutzatu gabe.",
             "outsideCoverage": "Oraingoz, Gipuzkoa barruko puntuak bakarrik hauta ditzakezu.",
             "coverageUnavailable": "Ezin da baimendutako eremua egiaztatu. Kargatu orria berriro.",
             "selectTerrain": "Hautatu puntu bat lurrean.",
@@ -64,7 +65,7 @@
             "fwiSource": "FWIaren iturria",
             "fwiSourceValue": "Bat ere ez / fikziozko balioak",
             "drawing": "Mugikorreko marrazketa",
-            "drawingValue": "Puntuak Gipuzkoara mugatuta; poligonoa baliozkotu gabe"
+            "drawingValue": "Puntuak Gipuzkoa barruan eta gurutzaketarik gabeko inguruak; estaldura osoaren baliozkotzea egiteke"
         },
         "design": {
             "title": "Zure Figma diseinurako",

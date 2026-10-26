@@ -5,7 +5,7 @@
         "explore": "Explorar mapa",
         "draw": "Dibujar área",
         "close": "Cerrar mapa",
-        "navigationHint": "Explora el terreno con gestos. Dibuja un área cuando estés listo.",
+        "navigationHint": "Explora el terreno con gestos. Para cambiar la selección, dibuja otra área: sustituirá a la anterior al finalizar.",
         "example": "Ver área de ejemplo",
         "showHeatmap": "Mostrar heatmap",
         "hideHeatmap": "Ocultar heatmap",
@@ -13,8 +13,9 @@
             "undo": "Deshacer",
             "finish": "Finalizar",
             "cancel": "Cancelar",
-            "instructions": "Esquinas: {{count}}. Selecciona al menos 3 puntos sobre el mapa para crear el área. Puedes deshacer, finalizar o cancelar.",
-            "notice": "Solo se admiten puntos dentro de Gipuzkoa. Los lados y la superficie del polígono aún no se validan.",
+            "instructions": "Esquinas: {{count}}. Selecciona al menos 3 puntos siguiendo el contorno, en orden y sin cruzar los lados. Puedes deshacer, finalizar o cancelar.",
+            "notice": "Solo se admiten puntos dentro de Gipuzkoa y contornos sin cruces. Aún no se comprueba que los lados y toda la superficie estén dentro de Gipuzkoa.",
+            "invalidOutline": "Ese contorno tiene cruces, lados solapados o no forma una superficie. Selecciona las esquinas siguiendo el borde, sin cruzar los lados.",
             "outsideCoverage": "De momento, solo puedes seleccionar puntos dentro de Gipuzkoa.",
             "coverageUnavailable": "No se puede comprobar la zona permitida. Vuelve a cargar la página.",
             "selectTerrain": "Selecciona un punto sobre el terreno.",
@@ -64,7 +65,7 @@
             "fwiSource": "Fuente del FWI",
             "fwiSourceValue": "Ninguna / valores ficticios",
             "drawing": "Dibujo móvil",
-            "drawingValue": "Puntos limitados a Gipuzkoa; polígono sin validar"
+            "drawingValue": "Puntos dentro de Gipuzkoa y contornos sin cruces; cobertura completa pendiente"
         },
         "design": {
             "title": "Para tu diseño en Figma",

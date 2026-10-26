@@ -25,6 +25,7 @@
     "cesium": "^1.146.0",
     "dotenv-webpack": "^9.0.0",
     "rxjs": "~7.8.0",
+    "robust-predicates": "^3.0.3",
     "tslib": "^2.3.0"
   },
   "devDependencies": {

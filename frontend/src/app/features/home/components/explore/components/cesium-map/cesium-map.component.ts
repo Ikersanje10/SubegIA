@@ -4,7 +4,8 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { booleanPointInPolygon } from '@turf/boolean-point-in-polygon';
 import type { MultiPolygon } from 'geojson';
 import { environment } from '../../../../../../../environments/environment';
-import { createExampleCells, EXAMPLE_AREA_COORDINATES, type Danger, type ExampleCell } from './example-area';
+import { createExampleCells, EXAMPLE_AREA_COORDINATES, type Coordinate, type Danger, type ExampleCell } from './example-area';
+import { isSimplePolygon } from './drawing-geometry';
 
 @Component({
   imports: [TranslatePipe],
@@ -40,7 +41,9 @@ export class CesiumMapComponent implements OnDestroy {
   readonly drawing = signal(false);
   readonly drawingPoints = signal<Cartesian3[]>([]);
   readonly pointCount = computed(() => this.drawingPoints().length);
-  readonly canFinishDrawing = computed(() => this.pointCount() >= 3);
+  readonly canFinishDrawing = computed(() =>
+    this.pointCount() >= 3 && this.isValidDrawingOutline(this.drawingPoints()),
+  );
   readonly drawingMessage = signal('');
   readonly conditionsOpen = signal(false);
   readonly wideLayout = signal(false);
@@ -140,7 +143,11 @@ export class CesiumMapComponent implements OnDestroy {
   finishDrawing() {
     const Cesium = this.Cesium;
     const source = this.drawingSource;
-    if (!this.drawing() || !this.canFinishDrawing() || !Cesium || !source) return;
+    if (!this.drawing() || this.pointCount() < 3 || !Cesium || !source) return;
+    if (!this.isValidDrawingOutline(this.drawingPoints())) {
+      this.drawingMessage.set('mapControls.drawing.invalidOutline');
+      return;
+    }
 
     const positions = [...this.drawingPoints()];
     source.entities.removeById('drawn-area');
@@ -247,6 +254,12 @@ export class CesiumMapComponent implements OnDestroy {
       return;
     }
 
+    const candidate = [...this.drawingPoints(), position];
+    if (candidate.length >= 3 && !this.isValidDrawingOutline(candidate)) {
+      this.drawingMessage.set('mapControls.drawing.invalidOutline');
+      return;
+    }
+
     const point = Cesium.Cartesian3.clone(position);
     this.drawingPoints.update(points => [...points, point]);
     this.drawingMessage.set('');
@@ -262,6 +275,19 @@ export class CesiumMapComponent implements OnDestroy {
       },
     }));
     this.requestMapRender();
+  }
+
+  private isValidDrawingOutline(positions: readonly Cartesian3[]): boolean {
+    const Cesium = this.Cesium;
+    if (!Cesium) return false;
+    const coordinates: Coordinate[] = positions.map(position => {
+      const location = Cesium.Cartographic.fromCartesian(position);
+      return [
+        Cesium.Math.toDegrees(location.longitude),
+        Cesium.Math.toDegrees(location.latitude),
+      ];
+    });
+    return isSimplePolygon(coordinates);
   }
 
   showExampleArea() {

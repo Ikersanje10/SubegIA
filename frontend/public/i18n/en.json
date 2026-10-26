@@ -5,7 +5,7 @@
         "explore": "Explore map",
         "draw": "Draw area",
         "close": "Close map",
-        "navigationHint": "Explore the terrain using gestures. Draw an area when you are ready.",
+        "navigationHint": "Explore the terrain using gestures. To change the selection, draw another area: it will replace the previous one when you finish.",
         "example": "View example area",
         "showHeatmap": "Show heatmap",
         "hideHeatmap": "Hide heatmap",
@@ -13,8 +13,9 @@
             "undo": "Undo",
             "finish": "Finish",
             "cancel": "Cancel",
-            "instructions": "Corners: {{count}}. Select at least 3 points on the map to create the area. You can undo, finish or cancel.",
-            "notice": "Only points within Gipuzkoa are allowed. Polygon edges and the full area are not validated yet.",
+            "instructions": "Corners: {{count}}. Select at least 3 points around the outline, in order and without crossing edges. You can undo, finish or cancel.",
+            "notice": "Only points within Gipuzkoa and outlines without crossings are allowed. Edges and the full area are not yet checked for coverage within Gipuzkoa.",
+            "invalidOutline": "This outline has crossings, overlapping edges or no surface area. Select corners around the boundary without crossing edges.",
             "outsideCoverage": "For now, you can only select points within Gipuzkoa.",
             "coverageUnavailable": "The supported area cannot be checked. Reload the page.",
             "selectTerrain": "Select a point on the terrain.",
@@ -64,7 +65,7 @@
             "fwiSource": "FWI source",
             "fwiSourceValue": "None / fictitious values",
             "drawing": "Mobile drawing",
-            "drawingValue": "Points restricted to Gipuzkoa; polygon not validated"
+            "drawingValue": "Points within Gipuzkoa and no outline crossings; full coverage validation pending"
         },
         "design": {
             "title": "For your Figma design",
