@@ -477,11 +477,194 @@ These products provide a practical route to obtaining noon-time variables and re
 
 ERA5 is distributed at 0.25 degrees and its official source describes approximately five-day early-release latency and possible revisions. It supports historical calculation but not detailed parcel-scale weather. ERA5-Land's native approximately 9 km resolution does not rescue the incomplete API configuration tested above.
 
-Open-Meteo's archived-model service offers regional/global models with different resolutions and availability dates; its automatic selection must not be treated as a universal fixed resolution. The next experiment should select a documented model covering Gipuzkoa and verify its grid/support and historical availability rather than defaulting to arbitrarily small map cells.
+Open-Meteo's archived-model service offers regional/global models with different resolutions and availability dates; its automatic selection must not be treated as a universal fixed resolution. The 2026-10-26 spatial experiment below verifies candidate models, their exposed grids and sampled historical availability rather than defaulting to arbitrarily small map cells. A final operational model has not yet been selected.
 
 The Historical Forecast API demonstrated 50 days through yesterday at the test location. Its current-day availability, publication schedule, corrections, and operational reliability have not been established. Display real valid dates and label model-based assessments; do not call past model estimates observed weather.
 
 Do not silently initialize from ERA5 and switch to another model or AEMET station series. A hybrid can introduce discontinuities and moisture-state biases and requires explicit specification and evaluation.
+
+#### Agreed subarea construction and assessment flow (2026-10-28)
+
+The user approved source-grid-based subareas and clarified that only the actual
+selected polygon determines inclusion, not its bounding rectangle. This is an
+agreed implementation direction, not an already implemented backend feature.
+
+1. Receive the selected GeoJSON polygon and validate its structure, topology
+   and complete coverage by Gipuzkoa before any weather requests.
+2. Use a versioned definition of the chosen model's exposed regular grid:
+   origin, spacing and dimensions. Reconstruct only nearby candidate cell
+   assignment rectangles locally; do not download or instantiate the entire
+   grid, or all cells in Gipuzkoa. For the verified `nearest` rule, assignment
+   rectangles extend halfway from each grid point toward its neighbors.
+3. Use the selection's bounding rectangle only to determine a conservative
+   candidate row/column range. Intersect each candidate cell with the actual
+   selected polygon. Discard empty intersections and intersections that only
+   touch at a point or line. A positive-area intersection becomes the subarea
+   geometry, possibly a MultiPolygon. Cells wholly inside gaps of a concave
+   selection's bounding rectangle must not generate subareas or weather requests.
+4. The retained clipped geometries must jointly cover the original selection,
+   with no positive-area overlaps or surface outside it, subject to explicitly
+   specified numerical tolerances. Do not silently crop an invalid selection
+   to Gipuzkoa as a substitute for rejecting it.
+5. Request the required weather series only for the distinct retained source
+   cells, reusing suitable cached data and batching coordinates where supported.
+   The source point need not itself lie inside the selected polygon or Gipuzkoa;
+   the positive-area intersection is the inclusion criterion. Keep the explicit
+   model, nearest-cell selection and downscaling configuration consistent with
+   the grid mapping; verify returned source centers.
+6. Calculate FWI server-side for each retained source cell using its weather
+   series, required historical moisture states and agreed reference-time,
+   rainfall and initialization rules. Associate the result with its clipped
+   subarea. Missing inputs or states must be reported explicitly, not replaced
+   with zero or fabricated values.
+7. Return each subarea's geometry, FWI, danger category, valid date, status and
+   source provenance so Angular/Cesium can render it. Detailed response field
+   names and classification thresholds remain to be finalized.
+
+The number of subareas follows positive-area intersections with the source
+grid, not an arbitrary target count or a selected-area-size threshold. A single
+intersecting cell yields a single subarea; do not subdivide it to imply extra
+meteorological detail. Different source cells may have identical weather, FWI
+or categories and must not be assigned artificial visual differences.
+
+ICON-EU and AROME are weather prediction models whose results are accessed via
+Open-Meteo, not separate services returning our subarea polygons. The backend
+constructs the clipped geometries from the grid definition, Open-Meteo supplies
+weather data, and the backend calculates FWI. The exact model is still pending;
+AROME HD remains a candidate, not an approved final selection. Scientific FWI
+validation and initialization remain required before displaying real assessments.
+
+#### Spatial subarea feasibility experiment (2026-10-26)
+
+At the user's request, real Open-Meteo requests were made for synthetic
+selections of increasing size in Gipuzkoa. No backend or frontend assessment
+integration was implemented, and no FWI values were calculated in this test.
+
+**Method and reproducibility**
+
+- Build squares centered near Arrasate at longitude -2.49, latitude 43.08, with
+  side lengths of 0.5, 5, 20 and 60 km in ETRS89 / UTM 30N. Intersect them with
+  the existing geoEuskadi Gipuzkoa boundary before generating sample points.
+  Larger selections therefore are not complete squares.
+- Request each of `icon_eu`, `meteofrance_arome_france` and
+  `meteofrance_arome_france_hd` separately. Use `cell_selection=nearest`,
+  `elevation=nan`, UTC Unix timestamps, Celsius, km/h and mm, requesting
+  temperature, relative humidity, 10 m wind speed and precipitation.
+  Multi-location requests require one `nan` elevation entry per coordinate;
+  a single entry produces HTTP 400. The initial failed requests were retained
+  alongside corrected successful responses.
+- Recent-data requests cover 2026-10-25 through 2026-10-26, 48 hourly values per
+  location. They include forecast/model weather, not verified observations.
+- The initial 5-by-5 interior sampling retained 25, 24, 17 and 10 points after
+  clipping to Gipuzkoa. Sample counts are not exhaustive cell counts.
+- Compare requested points with returned grid-center coordinates. Across all
+  228 initial location/model combinations, centers matched the published
+  regular-grid assignment within 0.00002 degrees. Repeated centers had identical
+  four-variable time series with elevation downscaling disabled.
+- Inspect Open-Meteo's public model-grid and nearest-point implementation at
+  commit `03d62919c419f1eccad8dcbbcf7f92a2dd7069b4`. This is source evidence,
+  not a claim that the hosted service runs that exact commit. Live probes
+  independently corroborated the sampled grid behavior.
+- Request 12 points per model near east-west and north-south half-spacing
+  transitions. All 36 probes matched the expected nearest-center assignment.
+  These tests constrain transitions to small brackets (approximately 10-14 m
+  for ICON-EU, 4-6 m for AROME and 1.6-2.3 m for AROME HD); they do not prove
+  equivalent meteorological or geodetic accuracy.
+
+The published API grids inspected are:
+
+| Explicit API model | Grid origin: longitude, latitude | Angular spacing in both axes | Approximate east-west / north-south center spacing near Arrasate |
+|---|---|---|---|
+| `icon_eu` | -23.5, 29.5 | 0.0625 degrees | 5.09 / 6.94 km |
+| `meteofrance_arome_france` | -12.0, 37.5 | 0.025 degrees | 2.04 / 2.78 km |
+| `meteofrance_arome_france_hd` | -12.0, 37.5 | 0.01 degrees | 0.81 / 1.11 km |
+
+Open-Meteo documents nominal model resolutions of approximately 7, 2.5 and
+1.5 km respectively. The angular output-grid spacing is not a new claim of
+native model accuracy, independent observations or field-scale precision.
+
+**Geometry-based zone enumeration**
+
+Using the published regular grids, construct nearest-grid assignment rectangles
+at half the spacing around each center and intersect them with the selected
+polygon. Enumerate every intersecting rectangle, not just centers found by
+sparse sampling or centers lying inside the selection. A contributing weather
+center may be outside the user's polygon or outside Gipuzkoa.
+
+| Original square side | Selected area after clipping to Gipuzkoa | ICON-EU zones | AROME zones | AROME HD zones |
+|---|---|---|---|---|
+| 0.5 km | 0.25 square km | 1 | 2 | 1 |
+| 5 km | 23.42 square km | 4 | 12 | 33 |
+| 20 km | 267.47 square km | 16 | 61 | 337 |
+| 60 km | 1266.88 square km | 55 | 267 | 1513 |
+
+These are computed API grid-assignment zones, not field observations or a count
+of completed FWI assessments. The union of clipped zones matched each selection,
+with overlap and uncovered fractions below 1e-9 in the geometry checks.
+An initial small selection returned only one sampled AROME center despite
+intersecting two zones: a fixed point sample can miss edge fragments even for
+a small area. Size alone is not a valid one-zone/many-zone rule.
+
+For the 5 km selection, all 4, 12 and 33 zone centers were subsequently queried,
+including centers outside the selection. All 49 centers matched their expected
+grid positions and returned complete 48-hour series for the four required
+variables. Other selections were sampled, not exhaustively queried for weather.
+GeoJSON examples of the three complete 5 km partitions were saved as experiment
+artifacts with `fwi: null` and `status: NOT_CALCULATED`; they are not real danger
+maps.
+
+**Historical input availability**
+
+The Historical Forecast API was also queried for Arrasate (-2.49, 43.08),
+Donostia (-1.9812, 43.3183) and a third interior point (-2.4, 43.28).
+For each of the three explicit models, all three points returned 1104
+consecutive hourly timestamps from 2026-09-10 through 2026-10-25, with no null
+values in temperature, relative humidity, wind or precipitation. Historical
+grid centers matched the same model-grid definition.
+
+Successful recent multi-point requests took approximately 0.24-0.49 seconds;
+the three-location 46-day historical requests took approximately 0.63-0.79
+seconds, measured client-side. These are single-run observations, not latency
+guarantees, rate-limit evidence or full-assessment benchmarks.
+
+**Implications and remaining work**
+
+- AROME France HD is a promising higher-spatial-detail candidate for the
+  prototype because required inputs and a matching historical series were
+  returned in these checks. It is not yet selected or proven more accurate
+  locally than the other models.
+- Prefer the versioned full exposed grid and nearest-cell rule over arbitrary
+  subdivisions or Voronoi regions built from an incomplete sample of centers.
+  This recommendation is specific to the verified regular grids and explicit
+  `nearest` selection. Default `land` selection and elevation adjustments need
+  separate behavior checks if adopted.
+- Identify/cache cells by model, grid version and integer indices rather than
+  raw floating-point center strings. Clip geometry to the selection and retain
+  source-cell provenance; never infer extra independent detail from terrain.
+- A broad selection can intersect over a thousand higher-detail zones. Test
+  batched retrieval, upstream usage accounting, reusable daily states and
+  result-transfer size before committing to full-region operational behavior.
+  No selection-size cap or asynchronous-job workflow was introduced.
+- Forty-six complete days do not establish sufficient FWI spin-up or drought
+  initialization. Reference-time/rainfall alignment, initialization sensitivity,
+  historical/model revisions, scientific calculation validation and comparison
+  with local observations remain pending.
+- Free-hosted-service eligibility, quotas and attribution still apply.
+
+The reproducible Python probe, request URLs, raw responses, timestamps, summaries,
+selection geometries and example clipped zones are retained in this session's
+`weather-grid-results` artifacts; no dependency or runtime application changes
+were needed for this experiment.
+
+Sources inspected for this experiment:
+
+- Model documentation: https://open-meteo.com/en/docs/historical-forecast-api
+- Meteo-France variables/resolutions: https://open-meteo.com/en/docs/meteofrance-api
+- API selection/downscaling parameters: https://open-meteo.com/en/docs
+- Grid definitions: https://github.com/open-meteo/open-meteo/blob/03d62919c419f1eccad8dcbbcf7f92a2dd7069b4/Sources/App/MeteoFrance/MeteoFranceDomain.swift
+- ICON-EU grid: https://github.com/open-meteo/open-meteo/blob/03d62919c419f1eccad8dcbbcf7f92a2dd7069b4/Sources/App/Icon/Icon.swift
+- Nearest-center implementation: https://github.com/open-meteo/open-meteo/blob/03d62919c419f1eccad8dcbbcf7f92a2dd7069b4/Sources/App/Domains/RegularGrid.swift
+- Available AROME HD fields: https://github.com/open-meteo/open-meteo/blob/03d62919c419f1eccad8dcbbcf7f92a2dd7069b4/Sources/App/MeteoFrance/MeteoFranceVariableDownloadable.swift
 
 #### EUR 0 conditions and privacy
 
@@ -740,6 +923,109 @@ One Spring Boot application
         v
 Persistent storage as justified by requirements
 ```
+
+#### Agreed assessment request and validation contract (2026-10-26)
+
+The user approved the following backend direction. This records the contract
+and responsibilities; it does not mean that the Spring Boot application or
+endpoint has been implemented.
+
+**Endpoint:** `POST /api/v1/assessments`, with `Content-Type: application/json`.
+The core MVP remains usable without login and requests the latest available
+daily assessment, not a user-selected historical date.
+
+Request example:
+
+```json
+{
+  "area": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-2.49, 43.08],
+        [-2.48, 43.08],
+        [-2.48, 43.09],
+        [-2.49, 43.09],
+        [-2.49, 43.08]
+      ]
+    ]
+  }
+}
+```
+
+- `area` is a GeoJSON Polygon in WGS 84 longitude/latitude degrees, with positions
+  ordered `[longitude, latitude]`. This version accepts one exterior ring and
+  no holes. The first position is repeated at the end.
+- Angular sends the selected geometry, not Cesium Cartesian3 objects,
+  presentation colors, terrain heights or client-calculated FWI values.
+- Preserve the finalized selection separately from the drawing draft so that
+  clearing or cancelling a draft does not prevent request retries.
+- Use Java `record` request DTOs, including `AssessmentRequest` and
+  `AreaGeometryRequest`, with `@RequestBody`, `@Valid` and Bean Validation.
+  DTOs are API contracts, not JPA persistence entities.
+- Validate required fields, the Polygon type, exactly one ring, at least four
+  positions including closure, exactly two finite numbers per position, and
+  longitude/latitude ranges. Malformed JSON or a structurally invalid request
+  must not reach weather-provider calls.
+- A dedicated geographic validation service uses JTS to check ring closure,
+  at least three distinct non-collinear vertices, nonzero surface area, valid
+  topology and complete coverage by Gipuzkoa. Frontend checks do not replace
+  server-side validation.
+- Check the complete polygon using the equivalent of
+  `gipuzkoa.covers(selectedArea)`, admitting the boundary itself. Checking
+  vertices alone is insufficient; do not silently clip or repair invalid input.
+  Numerical precision/tolerance rules still need to be specified and tested.
+- Load a trusted, versioned Gipuzkoa boundary once at application startup,
+  matching the frontend dataset prepared from geoEuskadi's
+  `TERRITORIOS_5000_ETRS89.zip` (source SHA-256:
+  `f42c1819495282a44518a8985fb5fd4928596a6d48118c2ed00559bd9547ab16`).
+  Both geometries must use compatible coordinates. Do not accept the permitted
+  boundary from the request or download it for each assessment. Missing or
+  invalid boundary data must fail explicitly, never bypass coverage checks.
+- Keep the controller thin: delegate geometry checks and assessment
+  orchestration to services. A `@RestControllerAdvice` centralizes expected
+  failure responses instead of scattering HTTP error construction through
+  controller methods.
+
+Agreed input-error distinction:
+
+| HTTP status | Meaning | Example application code |
+|---|---|---|
+| `400 Bad Request` | Malformed JSON, missing fields or invalid request structure/coordinate format | `INVALID_REQUEST` |
+| `422 Unprocessable Content` | Structurally accepted input with invalid polygon geometry | `INVALID_AREA_GEOMETRY` |
+| `422 Unprocessable Content` | Any part of the selected polygon is outside Gipuzkoa | `AREA_OUTSIDE_COVERAGE` |
+
+Application error codes must be stable. The example code names above are the
+initial vocabulary; complete field-level errors and operational errors remain
+to be defined. Angular translates user-facing messages from the application
+code, not by parsing server text.
+
+Example error response:
+
+```json
+{
+  "status": 422,
+  "code": "AREA_OUTSIDE_COVERAGE",
+  "detail": "El area seleccionada debe estar completamente dentro de Gipuzkoa."
+}
+```
+
+Do not include stack traces, credentials or complete submitted coordinates in
+public errors or application logs. If input validation fails, do not call
+Open-Meteo or begin the FWI calculation.
+
+**Next contract decisions:** define the typed successful response, subarea
+geometries, FWI/category fields, dates and timezone, source/model/resolution and
+calculation version; specify complete, partial, unavailable and stale-data
+behavior. Define operational error codes, rate/concurrency protection, payload
+limits, timeouts and bounded retries without inventing an area-size cap or
+committing to a queued-job workflow. Provider/model selection and FWI
+initialization/time alignment remain required before calculating real results.
+
+Keep request DTOs, scientific domain models and persistence mappings separate.
+Future login and saved user areas must not become prerequisites for this
+endpoint. Weather caches and daily FWI states have a different lifecycle from
+private user selections; storage and retention decisions remain to be made.
 
 - [ ] Define module responsibilities and internal interfaces.
 - [ ] Keep source ingestion, normalization, calculation, and presentation responsibilities explicit.
