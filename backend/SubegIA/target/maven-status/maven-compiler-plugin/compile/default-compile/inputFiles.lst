@@ -1,0 +1,12 @@
+C:\Users\Iker\Desktop\SubegIA\backend\SubegIA\src\main\java\io\github\ikersanje10\subegia\assessment\api\AreaGeometryRequest.java
+C:\Users\Iker\Desktop\SubegIA\backend\SubegIA\src\main\java\io\github\ikersanje10\subegia\assessment\api\AssessmentController.java
+C:\Users\Iker\Desktop\SubegIA\backend\SubegIA\src\main\java\io\github\ikersanje10\subegia\assessment\api\AssessmentExceptionHandler.java
+C:\Users\Iker\Desktop\SubegIA\backend\SubegIA\src\main\java\io\github\ikersanje10\subegia\assessment\api\AssessmentRequest.java
+C:\Users\Iker\Desktop\SubegIA\backend\SubegIA\src\main\java\io\github\ikersanje10\subegia\assessment\application\AssessmentService.java
+C:\Users\Iker\Desktop\SubegIA\backend\SubegIA\src\main\java\io\github\ikersanje10\subegia\assessment\domain\AreaGeometryValidator.java
+C:\Users\Iker\Desktop\SubegIA\backend\SubegIA\src\main\java\io\github\ikersanje10\subegia\assessment\domain\exception\AreaOutsideCoverageException.java
+C:\Users\Iker\Desktop\SubegIA\backend\SubegIA\src\main\java\io\github\ikersanje10\subegia\assessment\domain\exception\InvalidAreaGeometryException.java
+C:\Users\Iker\Desktop\SubegIA\backend\SubegIA\src\main\java\io\github\ikersanje10\subegia\assessment\infraestructure\AreaGeometryService.java
+C:\Users\Iker\Desktop\SubegIA\backend\SubegIA\src\main\java\io\github\ikersanje10\subegia\shared\api\ApiErrorResponse.java
+C:\Users\Iker\Desktop\SubegIA\backend\SubegIA\src\main\java\io\github\ikersanje10\subegia\shared\api\GlobalExceptionHandler.java
+C:\Users\Iker\Desktop\SubegIA\backend\SubegIA\src\main\java\io\github\ikersanje10\subegia\SubegIaApplication.java
