@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import io.github.ikersanje10.subegia.assessment.domain.AreaGeometryValidator;
 import io.github.ikersanje10.subegia.assessment.infraestructure.AreaGeometryService;
+import io.github.ikersanje10.subegia.assessment.infraestructure.config.SubArea;
 import tools.jackson.databind.ObjectMapper;
 
 @Service
@@ -24,10 +25,12 @@ public class AssessmentService {
         this.gipuzkoaGeometry = areaGeometryService.loadGipuzkoaPolygon(mapper);
     }
 
-    public void validateSelectedArea(List<List<List<Double>>> coordinates) {
+    public void assessArea(List<List<List<Double>>> coordinates) {
         Geometry selectedGeometry = areaGeometryService.loadSelectedAreaAsGeometry(coordinates);
 
         areaGeometryValidator.validateGeometry(selectedGeometry);
         areaGeometryValidator.validate(gipuzkoaGeometry, selectedGeometry);
+
+        List<SubArea> subAreas = areaGeometryService.generateSubAreas(selectedGeometry);
     }
 }

@@ -17,7 +17,7 @@ public class AssessmentController {
 
     @PostMapping
     public void assessment(@Valid @RequestBody AssessmentRequest payload) {
-        assessmentService.validateSelectedArea(payload.area().coordinates());
+        assessmentService.assessArea(payload.area().coordinates());
     }
 
 }

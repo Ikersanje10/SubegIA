@@ -477,7 +477,7 @@ These products provide a practical route to obtaining noon-time variables and re
 
 ERA5 is distributed at 0.25 degrees and its official source describes approximately five-day early-release latency and possible revisions. It supports historical calculation but not detailed parcel-scale weather. ERA5-Land's native approximately 9 km resolution does not rescue the incomplete API configuration tested above.
 
-Open-Meteo's archived-model service offers regional/global models with different resolutions and availability dates; its automatic selection must not be treated as a universal fixed resolution. The 2026-10-26 spatial experiment below verifies candidate models, their exposed grids and sampled historical availability rather than defaulting to arbitrarily small map cells. A final operational model has not yet been selected.
+Open-Meteo's archived-model service offers regional/global models with different resolutions and availability dates; its automatic selection must not be treated as a universal fixed resolution. The 2026-10-26 spatial experiment below verifies candidate models, their exposed grids and sampled historical availability rather than defaulting to arbitrarily small map cells. On 2026-10-29, AROME HD was selected for the MVP as recorded below; operational and scientific validation remain pending.
 
 The Historical Forecast API demonstrated 50 days through yesterday at the test location. Its current-day availability, publication schedule, corrections, and operational reliability have not been established. Display real valid dates and label model-based assessments; do not call past model estimates observed weather.
 
@@ -530,9 +530,251 @@ or categories and must not be assigned artificial visual differences.
 ICON-EU and AROME are weather prediction models whose results are accessed via
 Open-Meteo, not separate services returning our subarea polygons. The backend
 constructs the clipped geometries from the grid definition, Open-Meteo supplies
-weather data, and the backend calculates FWI. The exact model is still pending;
-AROME HD remains a candidate, not an approved final selection. Scientific FWI
+weather data, and the backend calculates FWI. On 2026-10-29 the user approved
+AROME HD for the MVP as specified below. Scientific FWI
 validation and initialization remain required before displaying real assessments.
+
+#### MVP weather model decision (2026-10-29)
+
+Use Open-Meteo with the explicit model `meteofrance_arome_france_hd` (AROME HD)
+for the MVP. The user accepted this recommendation based on the verified input
+availability, tested historical coverage and finer exposed grid, not a proven
+ranking of local forecast accuracy. This records a decision, not an implemented
+weather client or grid generator.
+
+Use the tested `cell_selection=nearest` and `elevation=nan` configuration
+consistently with the reconstructed assignment grid. The inspected grid origin
+is longitude -12.0, latitude 37.5, with 0.01-degree spacing on both axes and
+dimensions 2801 by 1791 points. Retain the source/version provenance documented
+in the experiment; grid changes must be detected and handled explicitly rather
+than silently mixing mappings.
+
+Do not silently use automatic model selection, mix models for initialization
+or switch providers when data is missing. Finer grid spacing does not establish
+better meteorological accuracy. FWI reference validation, initialization,
+time/rainfall alignment, hosted-service eligibility and quota handling remain
+required.
+
+#### Implementation checkpoint and next step (2026-10-29)
+
+The backend currently receives the selected GeoJSON at
+`POST /api/v1/assessment` (singular). The agreed public contract remains
+`/api/v1/assessments`; align the implementation and clients before integration.
+Request records enforce the initial structure, including non-null coordinate
+values. Geometry conversion checks finite longitude/latitude values and their
+ranges, and rejects an unclosed ring rather than silently closing it.
+`AssessmentService` uses a local selected geometry for each request; selection
+state must not be stored in shared service fields.
+
+The current separation is:
+
+- `assessment.api`: controller, request records and assessment error advice.
+  Shared API error records and generic input-error handling live in `shared.api`.
+- `assessment.application.AssessmentService`: orchestrates geometry preparation
+  and validation.
+- `assessment.infraestructure.AreaGeometryService`: loads the trusted Gipuzkoa
+  GeoJSON and converts input coordinates to JTS geometries. `infraestructure`
+  is the current package spelling in code.
+- `assessment.domain.AreaGeometryValidator`: checks JTS validity, nonempty
+  positive surface area and complete coverage with `covers()`. Domain exceptions
+  are translated by the API advice, not caught in the controller.
+
+The trusted boundary is read with
+`new ClassPathResource("geo/gipuzkoa.geojson").getInputStream()`, from
+`src/main/resources/geo/gipuzkoa.geojson`, and reused after startup. Do not use
+a working-directory-relative filesystem path or `getFile()` for packaged
+resources. The packaged application successfully started from outside the
+project directory after this change. Preserve the underlying exception as the
+cause if loading fails.
+
+Live endpoint checks returned the expected outcomes: valid interior polygon
+200; crossed polygon, collinear vertices and unclosed ring
+422 / `INVALID_AREA_GEOMETRY`; valid exterior polygon
+422 / `AREA_OUTSIDE_COVERAGE`. Earlier malformed JSON, incompatible field types,
+missing body and Bean Validation checks returned the structured 400 response.
+These are targeted checks, not an exhaustive regression suite. Coordinate range
+errors currently use `InvalidAreaGeometryException`; aligning them with the
+agreed 400 / `INVALID_REQUEST` contract remains pending.
+
+**Resume with local grid generation, not an Open-Meteo polygon request.**
+
+The AROME HD grid definition above is shared configuration, independent of the
+user selection and the day's weather. Store its origin, angular spacings,
+dimensions and source/version reference once; calculate only the candidate
+indices needed for each assessment. Do not materialize or download the full
+grid or all of Gipuzkoa's cells.
+
+For column and row indices, centers are computed as
+`longitude = -12.0 + column * 0.01` and
+`latitude = 37.5 + row * 0.01`. Under the verified nearest-grid rule, each
+assignment rectangle extends 0.005 degrees from its center on either axis.
+These midpoints are between neighboring meteorological grid points, NOT between
+the vertices drawn by the user. Grid spacing is angular, not a constant number
+of meters; near Arrasate it is approximately 0.81 km east-west and 1.11 km
+north-south, without implying equivalent meteorological accuracy.
+
+Use the selection envelope only to find a conservative, grid-bounded candidate
+index range. Construct candidate cell polygons with JTS, intersect each with
+the actual selected polygon and retain only positive-area polygonal results.
+Intersections can be disconnected; preserve all polygon parts and discard
+point/line-only contacts. Attach the source cell's integer indices and center
+to every retained subarea. The clipped zones must cover the selection without
+positive-area overlaps or additions outside it, using specified precision rules.
+In longitude/latitude, JTS `getArea()` is not in square meters; a positive-area
+check is not a metric surface measurement.
+
+Only after identifying the retained cells should the backend request their
+weather series from Open-Meteo (or reuse valid cached data), explicitly selecting
+AROME HD and the agreed mapping parameters. Open-Meteo does not return our
+clipped subarea polygons. Verify returned centers and report unavailable data
+explicitly. Implement and validate FWI separately before rendering real results;
+neighboring cells may legitimately have the same FWI or danger category.
+
+The user is implementing the backend manually to learn, with incremental
+explanations and reviews. Continue with the next small grid-generation step
+rather than implementing the entire pipeline without an explicit request.
+
+#### Illustrated guide: from a weather-grid center to a cell (2026-10-30)
+
+Esta explicacion documenta el calculo utilizado en `createCellGeometry()`.
+Partimos del centro meteorologico de una celda, no de una esquina ni de un
+vertice dibujado por el usuario. La rejilla expuesta de AROME HD que verificamos
+tiene una separacion de 0.01 grados en ambos ejes. Con
+`cell_selection=nearest`, los limites de asignacion estan a mitad de camino
+entre centros vecinos.
+
+**1. Localizar un centro a partir de su columna y fila**
+
+No necesitamos descargar todos los puntos. La configuracion permite calcular
+directamente el centro correspondiente a cada pareja de indices:
+
+```java
+double centerLongitude =
+        gridProperties.longitudeOrigin() + column * gridProperties.longitudeStep();
+double centerLatitude =
+        gridProperties.latitudeOrigin() + row * gridProperties.latitudeStep();
+```
+
+Por ejemplo, la columna 951 y la fila 558 dan aproximadamente el centro
+`[-2.49, 43.08]`, usando el origen `[-12.0, 37.5]`. Puede haber pequenas
+diferencias numericas de coma flotante; estos valores no expresan precision
+meteorologica a escala de una parcela.
+
+**2. Calcular los limites oeste y este**
+
+En horizontal, los centros vecinos y los limites de nuestra celda son:
+
+```text
+Centro anterior       Nuestro centro       Centro siguiente
+     -2.50                 -2.49                 -2.48
+       o---------------------o---------------------o
+                  |                     |
+               -2.495                -2.485
+                Oeste                  Este
+```
+
+El paso completo entre centros es 0.01 grados. Para llegar desde el centro
+al borde recorremos medio paso: 0.005 grados.
+
+```java
+double halfLongitudeStep = gridProperties.longitudeStep() / 2;
+double west = centerLongitude - halfLongitudeStep;
+double east = centerLongitude + halfLongitudeStep;
+```
+
+Restar longitud desplaza hacia el oeste; sumar desplaza hacia el este. Esto
+tambien se cumple con longitudes negativas: -2.495 esta al oeste de -2.49.
+No estamos haciendo la media entre los vertices de la seleccion.
+
+**3. Calcular los limites sur y norte**
+
+La misma regla se aplica a la latitud, que aumenta hacia el norte:
+
+```java
+double halfLatitudeStep = gridProperties.latitudeStep() / 2;
+double south = centerLatitude - halfLatitudeStep;
+double north = centerLatitude + halfLatitudeStep;
+```
+
+Para el centro del ejemplo, los cuatro limites son:
+
+```text
+                    Norte: 43.085
+              +---------------------+
+              |                     |
+Oeste         |          o          |         Este
+-2.495        |    (-2.49, 43.08)    |        -2.485
+              |                     |
+              +---------------------+
+                     Sur: 43.075
+```
+
+`west`, `east`, `south` y `north` son cuatro limites escalares, no cuatro
+coordenadas completas. Sus combinaciones determinan las esquinas:
+
+| Esquina | Longitud | Latitud |
+|---|---|---|
+| Suroeste | `west` | `south` |
+| Sureste | `east` | `south` |
+| Noreste | `east` | `north` |
+| Noroeste | `west` | `north` |
+
+**4. Construir el rectangulo con JTS**
+
+JTS puede construir el poligono rectangular directamente desde esos limites:
+
+```java
+Geometry cell = geometryFactory.toGeometry(
+        new Envelope(west, east, south, north));
+```
+
+El borde este de esta celda coincide con el borde oeste de la siguiente.
+La regla de medio paso tesela idealmente la rejilla sin huecos ni solapamientos
+de superficie; la implementacion debe comprobar las tolerancias numericas.
+Los grados no equivalen a una distancia fija en metros: estas celdas no son
+cuadrados metricos, ni delimitan cambios fisicos bruscos en el tiempo.
+
+**5. Distinguir la celda candidata de la subarea definitiva**
+
+El rectangulo de la celda lo determina la rejilla; la seleccion solo determina
+que parte conservaremos:
+
+```text
+         Celda A                    Celda B
+  +---------------------+---------------------+
+  |                     |                     |
+  |    +----------------+--------+            |
+  |    | Parte A        | Parte B|            |
+  |    +----------------+--------+            |
+  |                     |                     |
+  +---------------------+---------------------+
+
+       Rectangulo interior = seleccion del usuario
+```
+
+Se recorta cada celda candidata mediante `cell.intersection(selectedArea)`.
+Solo las partes poligonales con superficie se convierten en subareas finales;
+el resultado tambien puede tener varias partes desconectadas. Una celda
+que solo toque el borde, o quede completamente fuera, no necesita una consulta
+meteorologica.
+
+Cada subarea conserva la geometria recortada y los indices y centro de su
+celda original. No se debe sustituir ese centro por el centroide del recorte:
+podria corresponder a otro punto de consulta.
+
+`generateSubAreas()` coordina tres pasos privados: `calculateGridRange()` obtiene
+el rango de filas y columnas mediante la envolvente, `generateCandidateCells()`
+construye los rectangulos con su centro original y `clipCellsToSelectedArea()`
+los recorta con la seleccion. `GridRange` es un record privado que agrupa los
+cuatro indices extremos; no almacena estado de una peticion en el servicio.
+
+El resultado contiene las geometrias recortadas, no los rectangulos completos.
+`collectPolygons()` conserva todas las partes poligonales, incluidas las de un
+MultiPolygon o una coleccion mixta, y descarta contactos de punto o linea.
+Solo las celdas con recortes de superficie positiva generan un `SubArea`, con
+su fila, columna y centro meteorologico original. La busqueda usa solo las
+filas y columnas cercanas a la envolvente de la seleccion, no toda la rejilla.
+Las consultas meteorologicas siguen pendientes.
 
 #### Spatial subarea feasibility experiment (2026-10-26)
 
@@ -631,8 +873,9 @@ guarantees, rate-limit evidence or full-assessment benchmarks.
 
 - AROME France HD is a promising higher-spatial-detail candidate for the
   prototype because required inputs and a matching historical series were
-  returned in these checks. It is not yet selected or proven more accurate
-  locally than the other models.
+  returned in these checks. It had not been selected at the time of the
+  experiment; the subsequent 2026-10-29 MVP decision is recorded above.
+  It has not been proven more accurate locally than the other models.
 - Prefer the versioned full exposed grid and nearest-cell rule over arbitrary
   subdivisions or Voronoi regions built from an incomplete sample of centers.
   This recommendation is specific to the verified regular grids and explicit
