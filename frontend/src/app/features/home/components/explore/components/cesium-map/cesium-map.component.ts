@@ -6,6 +6,9 @@ import type { MultiPolygon } from 'geojson';
 import { environment } from '../../../../../../../environments/environment';
 import { createExampleCells, EXAMPLE_AREA_COORDINATES, type Coordinate, type Danger, type ExampleCell } from './example-area';
 import { isSimplePolygon } from './drawing-geometry';
+import { AssessmentService } from '../../../../../../api/assessment.service';
+import { AssessmentRequest, Position } from '../../../../../../api/Assessment';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   imports: [TranslatePipe],
@@ -22,6 +25,7 @@ export class CesiumMapComponent implements OnDestroy {
   private readonly mapCredits = viewChild.required<ElementRef<HTMLDivElement>>('mapCredits');
   private readonly zone = inject(NgZone);
   private readonly injector = inject(Injector);
+  private readonly assessmentService = inject(AssessmentService);
   private readonly drawButton = viewChild<ElementRef<HTMLButtonElement>>('drawButton');
   private readonly drawingCloseButton = viewChild<ElementRef<HTMLButtonElement>>('drawingCloseButton');
   private readonly exploreButton = viewChild<ElementRef<HTMLButtonElement>>('exploreButton');
@@ -168,6 +172,38 @@ export class CesiumMapComponent implements OnDestroy {
         classificationType: Cesium.ClassificationType.TERRAIN,
       },
     });
+
+    const coordinates: Position[] = this.drawingPoints().map(position => {
+      const location = Cesium.Cartographic.fromCartesian(position);
+
+      return [
+        Cesium.Math.toDegrees(location.longitude),
+        Cesium.Math.toDegrees(location.latitude),
+      ];
+    });
+
+    const first = coordinates[0];
+    if (!first) return;
+
+    const request: AssessmentRequest = {
+      area: {
+        type: 'Polygon',
+        coordinates: [[...coordinates, [first[0], first[1]]]],
+      },
+    };
+
+    this.assessmentService.calculateFWI(request).subscribe(
+      {
+        next: res => {
+          console.log(res);
+        },
+        error: (error: HttpErrorResponse) => {
+          console.log(error.status); // Por ejemplo, 422.
+          console.log(error.error);  // Body JSON enviado por Java.
+        },
+      }
+    );
+
     this.cancelDrawing();
   }
 
