@@ -17,20 +17,24 @@ public class AssessmentService {
 
     private AreaGeometryService areaGeometryService;
     private AreaGeometryValidator areaGeometryValidator;
+    private FireRiskService fireRiskService;
 
     public AssessmentService(AreaGeometryService areaGeometryService, AreaGeometryValidator areaGeometryValidator,
-            ObjectMapper mapper) {
+            ObjectMapper mapper, FireRiskService fireRiskService) {
         this.areaGeometryService = areaGeometryService;
         this.areaGeometryValidator = areaGeometryValidator;
+        this.fireRiskService = fireRiskService;
         this.gipuzkoaGeometry = areaGeometryService.loadGipuzkoaPolygon(mapper);
     }
 
-    public void assessArea(List<List<List<Double>>> coordinates) {
+    public List<SubAreaAssessment> assessArea(List<List<List<Double>>> coordinates) {
         Geometry selectedGeometry = areaGeometryService.loadSelectedAreaAsGeometry(coordinates);
 
         areaGeometryValidator.validateGeometry(selectedGeometry);
         areaGeometryValidator.validate(gipuzkoaGeometry, selectedGeometry);
 
         List<SubArea> subAreas = areaGeometryService.generateSubAreas(selectedGeometry);
+
+        return fireRiskService.calculateFWI(subAreas);
     }
 }

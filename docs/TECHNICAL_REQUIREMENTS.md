@@ -555,6 +555,356 @@ better meteorological accuracy. FWI reference validation, initialization,
 time/rainfall alignment, hosted-service eligibility and quota handling remain
 required.
 
+#### Live archive and FWI sensitivity experiment (2026-10-31)
+
+This is a feasibility experiment, not a validation of operational fire danger
+in Gipuzkoa or an implementation of the Java calculator. No application code
+was changed for this experiment.
+
+Requests explicitly selected `meteofrance_arome_france_hd`,
+`cell_selection=nearest`, `elevation=nan`, UTC timestamps and wind in km/h.
+The four sampled public coordinates were near Donostia (43.30, -1.98),
+Irun (43.34, -1.79), Arrasate (43.06, -2.49) and Zarautz (43.28, -2.17).
+Returned coordinates matched the requested source centers within floating-point
+representation differences.
+
+| Request | Measured result |
+|---|---|
+| `api.open-meteo.com/v1/forecast`, Donostia, `past_days=90`, `forecast_days=1` | HTTP 200 and 2,184 timestamped hours, but 1,332 null values in EACH required variable. Only 35 complete noon/24-hour input sets could be derived; the last is the current day and includes forecast weather, not a historical observation. HTTP success and array length alone are not completeness checks. |
+| `historical-forecast-api.open-meteo.com/v1/forecast`, four points, 2025-10-31 through 2026-10-30 | 8,760 hours per point, with no null/nonfinite values, timestamp gaps or duplicates in the four required variables. Humidity stayed within 0-100 and wind/precipitation were nonnegative. |
+| Archive versus recent forecast, Donostia, 2026-10-24 through 2026-10-30 | All four variables matched exactly across the 168 overlapping hours at the time of retrieval. This is one overlap check, not a guarantee against later archive revisions. |
+
+For multiple coordinates the API rejected a scalar `elevation=nan` with HTTP
+400. Repeating it as `elevation=nan,nan,nan,nan` succeeded. Preserve one
+elevation entry per coordinate when batching; earlier scalar advice only
+applies to a single location.
+
+Daily input sets used instantaneous temperature/humidity/wind at 11:00 UTC
+(noon CET standard time, including summer) and the sum of the 24 preceding
+hourly precipitation intervals ending at that timestamp. Starting the archive
+at midnight leaves insufficient preceding rainfall for its first noon;
+364 complete daily input sets were available from 2025-11-01 through
+2026-10-30. Rainfall was not replaced with a midnight-to-midnight daily sum.
+
+Calculations used the external `cffdrs/cffdrs_py` reference pinned to commit
+`2480d4351e7f63efd3060c4ef5afc86b19cd3d74` (package metadata version 0.3.0).
+Its GPL-2.0 source, license and regression fixture were retained ONLY in session
+artifacts, not copied into the repository or Java application. The reference's
+fixture contains 48 daily examples derived from R `cffdrs` and associated with
+Van Wagner and Pickett (1985). All 288 component checks passed with absolute
+tolerance 0.1; the largest measured component error was below 0.050.
+This checks the executed reference against its fixture, not future Java code.
+
+For each point, rolling windows of 30, 60, 90 and 180 days were evaluated on
+184 target dates (2026-04-30 through 2026-10-30). The same weather,
+latitude/month adjustments and continuous daily equations were used throughout.
+There were no seasonal resets or overwintering rules in this sensitivity
+experiment. The long-run comparison began on 2025-11-01 with FFMC/DMC/DC
+85/6/15; it is a comparison baseline, NOT observed truth. Additional initial
+states 60/0/0 and 95/100/800 are synthetic wet/dry stress cases, not locally
+measured states or a calibrated uncertainty interval.
+
+| Window | Largest absolute FWI difference versus long run, using 85/6/15 for both | Largest FWI spread across the three initial states |
+|---|---|---|
+| 30 days | 11.049 | 15.052 |
+| 60 days | 3.533 | 7.328 |
+| 90 days | 1.488 | 4.895 |
+| 180 days | 0.0071 | 0.360 |
+
+At 90 days, the largest DC difference versus the long run was about 306 index
+units despite more modest FWI differences. A similar final FWI alone is
+therefore not sufficient evidence that all moisture states have stabilized.
+At the end of the 364-day run, all three starting states produced identical
+components within the calculator's floating-point output at all four points.
+These measured results do not establish a universal 180-day or one-year rule.
+
+Conclusion: an explicit AROME HD archive can supply a continuous reconstruction
+for the sampled locations and year. The current forecast endpoint alone cannot
+be assumed to provide 90 usable historical days. A longer, documented spin-up
+and persisted daily states are supported as a prototype direction, but remain
+a proposal rather than a newly approved seasonal policy. Validate the Java
+calculation independently against reference vectors, handle missing inputs
+explicitly, and specify initialization/seasonal treatment before real results.
+Local meteorological accuracy, full spatial coverage, hosted-service
+eligibility, quotas and operational reliability were not established by these
+tests. No station-based validation or matched independent EFFIS comparison
+was performed.
+
+Reproducible scripts and raw JSON reports are retained in this conversation's
+session artifacts: `weather_probe.py`, `weather_probe_report.json`,
+`archive_probe_report.json`, `fwi_sensitivity.py` and
+`fwi_sensitivity_report.json`, alongside the raw weather responses and licensed
+external reference. The annual retry and its corrected URL are recorded in
+`archive_probe_report.json`; the first report preserves the initial HTTP 400.
+
+References:
+
+- https://open-meteo.com/en/docs/historical-forecast-api
+- https://open-meteo.com/en/docs/meteofrance-api
+- https://rdrr.io/cran/cffdrs/man/fwi.html
+- https://github.com/cffdrs/cffdrs_py/tree/2480d4351e7f63efd3060c4ef5afc86b19cd3d74
+
+#### Historical Forecast API freshness and endpoint choice (2026-10-31)
+
+The user confirmed using the Historical Forecast API after the archive tests
+and asked whether a second forecast integration is necessary. The approved
+source remains AROME HD; this is NOT the ERA5 Historical Weather API at
+`archive-api.open-meteo.com`.
+
+At approximately 19:27 UTC on 2026-10-31, the Historical Forecast endpoint
+returned all four required variables without nulls for 2026-10-30 and
+2026-10-31 at all four sampled points. Today's 11:00 UTC weather and the
+preceding 24-hour precipitation window were complete. It therefore supported
+today's FWI inputs in this check, not only yesterday's.
+
+Additional Donostia requests returned complete model weather for tomorrow,
+2026-11-01. A request extending through 2026-11-07 contained non-null values
+through 2026-11-02 18:00 UTC, then null values in each required variable.
+The latest returned timestamp alone must not be used as the latest usable
+date. Future values are forecasts even though this endpoint's name includes
+"Historical"; past values are archived model estimates, not station
+observations. The tested horizon is transient, not a guaranteed publication
+schedule or horizon for every cell.
+
+For the latest-daily-FWI MVP, one Historical Forecast integration is sufficient
+based on these tests. Restrict the assessment to a reference noon that has
+already passed and for which weather, aligned rainfall and prior states are
+complete; use an explicitly dated previous available result when today's
+inputs are missing. Do not silently substitute zeros, use future timestamps
+as current assessments, or promise that today's data is always available.
+Initial reconstruction and subsequent small incremental requests can use the
+same endpoint and explicit model. Cache/persist states rather than retrieving
+the entire history for every user polygon.
+
+Raw responses and reports are retained as `archive_latest.json`,
+`archive_latest_report.json`, `archive_tomorrow_report.json` and
+`archive_horizon_report.json` in this conversation's session artifacts.
+
+Client migration: the `openMeteoRestClient` bean now targets
+`https://historical-forecast-api.open-meteo.com`. `getHourlyWeather()` retains
+its signature and existing 90-past-days-plus-today window, expressed as
+inclusive `start_date` / `end_date` rather than `past_days` / `forecast_days`.
+Dates and hourly timestamps use UTC; elevation entries are repeated for all
+coordinates. `OpenMeteoClient` is registered as a Spring component. The
+`OpenMeteoResponse` record is unchanged because both endpoints return the
+same selected hourly fields, including possible nulls. The 90-day window
+remains provisional, not an approved or validated FWI initialization policy.
+
+#### Domain FWI calculator implementation (2026-10-31)
+
+The user approved initial FFMC/DMC/DC as mandatory input, without silently
+assuming 85/6/15 for Gipuzkoa. The new domain implementation is independent
+of provider DTOs and performs deterministic daily calculations:
+
+| Type | Responsibility |
+|---|---|
+| `DailyWeather` | Assessment date, latitude, temperature in Celsius, relative humidity in percent, 10 m wind in km/h and preceding 24-hour precipitation in mm. Represents reference-noon weather, not daily means. |
+| `FWIMoistureState` | Dated FFMC, DMC and DC. The initial state's date must be the day immediately before the first weather input. |
+| `FWIResult` | Daily inputs, updated moisture states, ISI, BUI and FWI; derives its risk level from FWI without storing a conflicting duplicate category. |
+| `FWICalculator` | `calculateDay(weather, previous)` and `calculateSeries(weather, initial)`. Updates FFMC/DMC/DC, then ISI/BUI/FWI. Has no mutable per-cell calculation state. |
+| `FWIRiskLevel` | EFFIS absolute FWI classification, separate from the equations. |
+
+`calculateSeries()` requires nonempty, chronological, consecutive days with
+one source latitude. It rejects null days, gaps, duplicates, reversed dates
+and mixed latitudes rather than sorting, skipping, filling gaps or resetting.
+Its output list is immutable. The caller remains responsible for matching
+the initial state to the correct source cell and for supplying continuous,
+properly aligned reference-time weather.
+
+The first implementation uses the northern monthly DMC factors and DC
+seasonal factors suitable for Gipuzkoa; `DailyWeather` explicitly restricts
+latitude to 30-90 N instead of silently applying northern factors worldwide.
+Weather and output records reject nonfinite values, negative wind/rain/codes,
+humidity outside 0-100 and FFMC outside 0-101. FWI is not capped at 100.
+Domain violations throw descriptive `IllegalArgumentException`s; no
+success-shaped fallback or hidden initialization is provided.
+
+EFFIS categories are LOW (<11.2), MODERATE (11.2 <= FWI <21.3),
+HIGH (21.3 <= FWI <38), VERY_HIGH (38 <= FWI <50), EXTREME
+(50 <= FWI <=70), and VERY_EXTREME (>70). Intermediate shared boundaries
+are assigned to the higher category; exactly 70 remains EXTREME, matching
+EFFIS's explicit >70 definition for VERY_EXTREME. These are harmonized
+European classes, not a locally calibrated ignition-probability scale.
+
+The equations are independently expressed in Java using the Van Wagner/
+Pickett FWI method, without importing the GPL reference source or fixtures
+into this repository. The executed Java implementation was numerically
+compared to the pinned external reference documented above using 4,608
+original synthetic cases (27,648 component comparisons). Cases cover all
+12 months, wet/dry states, DMC branch boundaries, and precipitation at and
+just above the 0.5/1.5/2.8 mm thresholds. Absolute tolerance was 1e-7;
+the largest measured component difference was below 2.3e-13.
+The reproducible probe and JSON report remain in session artifacts as
+`FWIReferenceProbe.java`, `verify_java_fwi.py` and
+`java_fwi_verification_report.json`.
+
+Repository JUnit coverage includes an original synthetic five-day reference
+sequence, wet/dry/winter branches, invalid inputs, date gaps/ordering,
+immutable output, leap day/year rollover, and exact EFFIS classification
+boundaries. Numerical agreement checks calculation behavior, not the
+accuracy of AROME HD weather or local fire danger.
+
+Example of the domain entry point (the starting values here are illustrative
+inputs, NOT approved states for Gipuzkoa):
+
+```java
+DailyWeather day = new DailyWeather(
+        LocalDate.of(2026, 7, 1), 43.3, 18.2, 65, 12.3, 0);
+FWIMoistureState previous = new FWIMoistureState(
+        LocalDate.of(2026, 6, 30), 85, 6, 15);
+FWIResult result = calculator.calculateDay(day, previous);
+```
+
+This step does NOT connect real results to the HTTP assessment endpoint.
+`FireRiskService` still needs hourly-to-daily preparation at 11:00 UTC,
+aligned preceding rainfall, missing/future-day handling, and explicit
+per-cell initial states before invoking the calculator. Persistence,
+seasonal start/stop/overwintering policy, provenance and response contracts
+remain separate work. No result from a provisional 90-day restart is
+presented as locally reliable.
+
+#### Per-cell FWI orchestration and GeoJSON response (2026-10-31)
+
+The user explicitly selected initial moisture states supplied by the caller
+for each cell, rather than a shared experimental 85/6/15 initialization.
+The existing `POST /api/v1/assessment` route now returns a JSON array of
+`SubAreaAssessmentResponse` instead of an empty response. The previously
+documented plural route alignment remains separate work.
+
+`AssessmentRequest` now contains `area` and a required, nonempty
+`initialStates` array. Each entry includes integer `column` / `row`, `date`,
+`ffmc`, `dmc`, and `dc`. Indices identify the source cell, not the position of
+an item in the weather response. Supply exactly one entry per retained
+intersected cell; unexpected/missing/duplicate cells and initial dates on or
+after today produce structured 422 / `INVALID_FWI_INITIALIZATION`.
+Missing or constraint-invalid request fields produce the existing structured
+400 response. These states do not come from Open-Meteo and must not be
+fabricated by Angular. Source-matching and scientifically justified
+initialization are still the caller's responsibility.
+
+Illustrative request entry (these are example codes, not local state estimates):
+
+```json
+"initialStates": [
+  {"column":1002,"row":580,"date":"2026-10-29","ffmc":85,"dmc":6,"dc":15}
+]
+```
+
+`AssessmentService` validates the polygon and generates its clipped source
+cells, then calls `FireRiskService.calculateFWI(cells, initialStates)`.
+The weather client has an explicit-date overload. This assessment flow
+requests from the earliest initial-state date through today's UTC date,
+including the preceding rainfall needed for each cell's first next-day
+calculation. It is no longer limited to an arbitrary 90-day start for
+assessment calls. The earlier no-date client overload remains available
+with its provisional 90-past-days-plus-today behavior.
+
+`DailyWeatherMapper` checks required arrays and consistent lengths, and
+requires strictly consecutive hourly UTC timestamps. For each cell it
+starts the daily series on the day after that cell's initial-state date.
+It selects temperature/humidity/wind at 11:00 UTC and sums exactly 24 hourly
+precipitation intervals ending then (12:00 UTC the previous day through
+11:00 UTC the assessment day, with each value representing its preceding
+hour). It rejects invalid/negative hourly rainfall even if the summed total
+would otherwise appear valid. Dates whose reference noon is still in the
+future are not calculated.
+
+The service verifies response count and returned source coordinates before
+associating weather with the request's cells (tolerance 0.0001 degrees,
+smaller than half the agreed grid spacing). Each cell uses its own weather
+series and initial states; `calculateSeries()` supplies the last result.
+Dates may differ between cell results when today's data is incomplete.
+
+Partial behavior is explicit: missing/malformed historical inputs make that
+cell `UNAVAILABLE` with an explanatory `unavailableReason`, retaining its
+geometry and leaving FWI/category/date/moisture state null. Other valid cells
+remain available. An incomplete current day may return the last complete
+previous result, with its actual date, provided the preceding daily sequence
+is continuous. It does not skip a missing historical day and resume later.
+Whole-provider errors and count/coordinate mismatches use the existing
+weather error response rather than returning incorrectly associated results.
+
+Each `SubAreaAssessmentResponse` includes:
+
+- `column`, `row` and `geometry`: a GeoJSON Polygon or MultiPolygon JSON
+  object with longitude/latitude coordinates, not serialized JTS internals
+  or a JSON string. Legacy CRS output is disabled.
+- `fwi`, `riskLevel`, `date` and typed `status` (`AVAILABLE` / `UNAVAILABLE`),
+  with `unavailableReason` for unavailable cells.
+- `moistureState`: dated FFMC/DMC/DC from the latest computed day, available
+  for explicit subsequent updates; no state persistence is implemented.
+- `model`, `sourceLongitude`, `sourceLatitude`: model/grid provenance.
+
+Angular can wrap `geometry` in a GeoJSON Feature with FWI/status as properties
+and pass that Feature or a FeatureCollection to Cesium's GeoJSON loader.
+It must show unavailable cells distinctly, retain actual assessment dates
+and avoid treating missing FWI as zero. No Angular code was changed here.
+
+Targeted tests cover interval indexing and the autumn clock-change date in
+UTC, incomplete current-day fallback, missing historical days, invalid
+rainfall/arrays/timestamps, independent states and starting dates per cell,
+coordinate/count mismatches, HTTP input validation and error mapping, and
+Polygon/MultiPolygon GeoJSON object serialization. The Spring application
+context also starts with the new dependencies. These integration checks
+do not establish local meteorological accuracy or a seasonal policy.
+
+#### Backend-owned experimental initialization (2026-10-31, latest decision)
+
+This decision supersedes the earlier same-day `initialStates` request and
+90-day window described in the preceding checkpoints. The user approved
+a 365-day experimental reconstruction with initial FFMC/DMC/DC 85/6/15
+after requesting that Angular submit only the selected area.
+
+The public request is now:
+
+```json
+{
+  "area": {
+    "type": "Polygon",
+    "coordinates": [[
+      [-1.98,43.30],[-1.975,43.30],[-1.975,43.305],[-1.98,43.30]
+    ]]
+  }
+}
+```
+
+`AssessmentService.assessArea(coordinates)` and
+`FireRiskService.calculateFWI(cells)` no longer require caller states.
+The request DTO for initial states and its cell-initialization carrier
+were removed. `FWICalculator` still requires an explicit previous state;
+initialization is supplied by the application service, not hidden in
+the scientific equations or computed by Angular.
+
+The target date is today if 11:00 UTC has already passed, otherwise yesterday.
+For target date D, the initial state is dated D minus 365 days, the first
+calculation is D minus 364 days and the last is D: exactly 365 daily updates.
+The archive includes the initial-state day to supply the preceding rainfall
+for that first update, giving 366 inclusive weather dates (8,784 hourly
+timestamps with complete full-day responses). Subtracting a fixed number
+of days rather than one calendar year preserves this window across leap years.
+The no-date weather-client overload also uses 365 preceding days instead of 90.
+
+Each cell is calculated independently from the same documented initial
+codes, but its own weather. The response adds `experimental: true`,
+`initialState` (date and codes), and `calculationDays` (actual successful
+daily updates). With incomplete current-day inputs, the preceding result
+can have 364 calculation days and its earlier actual date. A missing
+historical day remains unavailable; such a cell reports zero calculation
+days, null FWI and its reason rather than a fabricated result.
+
+These default codes are an approved prototype assumption, not locally
+measured initial moisture or a validated seasonal/overwintering policy.
+Longer reconstruction reduces start-state dependence in the sampled tests,
+not weather-model error or uncertainty in local fuel representation.
+No scientific-accuracy guarantee is added. The backend currently rebuilds
+history on each request; weather caching and persisted daily states remain
+pending to reduce latency and upstream quota use.
+
+Updated tests verify geometry-only HTTP requests, exposed experimental
+metadata, exactly 365 daily updates, distinct per-cell weather/results,
+current-day fallback, historical gaps, source-coordinate/count checks,
+GeoJSON Polygon/MultiPolygon serialization and Spring dependency wiring.
+
 #### Implementation checkpoint and next step (2026-10-29)
 
 The backend currently receives the selected GeoJSON at
@@ -1381,12 +1731,34 @@ Small, disposable technical experiments are allowed during preparation when need
 
 ## 9. Immediate next actions
 
-1. Review the proposed single-screen desktop layout and create a lightweight wireframe/Figma flow.
-2. Define the smallest frontend/backend contract and model-input choices needed for a working slice.
-3. Set up Angular/CesiumJS and one modular Spring Boot application, then implement terrain navigation and polygon selection.
-4. Implement a small FWI calculation verified against reference examples and integrate the approved Open-Meteo source with explicit assumptions.
-5. Connect source-supported subarea results, the heatmap, and the side panel, including loading and missing-data states.
-6. Check deployment feasibility against the EUR 0 budget and complete the remaining requirements incrementally.
+Updated 2026-10-31; earlier milestone/checkpoint text records historical progress,
+not the current active step.
+
+| Step | Current state | Next evidence needed |
+|---|---|---|
+| Geometry validation and source-grid partition | Implemented with targeted checks | Preserve coverage, no fabricated resolution and Polygon/MultiPolygon output |
+| AROME HD archive and daily weather preparation | Implemented; public samples and mapper tests checked | A successful live assessment request, broader coverage/freshness and quota behavior |
+| Domain FWI and EFFIS classification | Implemented and numerically reference-checked | Maintain regression coverage; do not equate numerical agreement with local accuracy |
+| Per-cell response | Implemented; geometry-only mocked HTTP and GeoJSON serialization checked | Postman request with only `area`; confirm actual dates/results and experimental metadata |
+| Initialization and persistence | Backend-owned experimental 365-day reconstruction with 85/6/15 approved and implemented | Cache weather/persist updates; investigate local and seasonal initialization instead of requiring frontend states |
+| Angular integration | Pending | Connect selection to assessment; align singular/plural route; load response geometry and show real FWI/status/date |
+| Heatmap, results and guidance | Pending real-data integration | Replace example values, map/list selection parity, legend, partial/error states, source attribution and official guidance |
+| API resource protection | Pending; required before public exposure | Rate limiting/429, concurrency and upstream quota budgets, request/geometry complexity validation and production CORS; retain configured timeouts |
+| MVP completion and deployment | Pending | Reviewed ES/EU/EN content, accessibility/privacy/performance and feasible EUR 0 HTTPS hosting/service eligibility |
+
+The endpoint is callable from Postman with only the `area` GeoJSON object;
+Angular does not provide states or source-cell identifiers. The backend
+returns initialization assumptions and experimental metadata. No successful
+live HTTP assessment was claimed by the mocked integration tests.
+
+Next implementation order: demonstrate the live geometry-only request,
+connect Angular and its real heatmap/details, then add reusable weather/state
+storage and resource protection before public deployment. Core access remains
+anonymous; rate limiting is not a requirement to add login/JWT. Determine
+numeric resource limits from measured workloads and actual upstream quotas,
+not invented thresholds or an unapproved polygon-size cap. Cache keys and
+persisted states must include model/source-cell/date and calculation/
+initialization provenance to avoid stale or mismatched reuse.
 
 Do not reopen the completed audience/product-brief decisions or require operational scientific validation before UX work. Existing agent inspection is optional reference work, not a dependency for the new implementation.
 

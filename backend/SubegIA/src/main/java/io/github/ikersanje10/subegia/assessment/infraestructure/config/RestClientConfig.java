@@ -8,8 +8,9 @@ import org.springframework.web.client.RestClient;
 public class RestClientConfig {
 
     @Bean
-    public RestClient restClient() {
-        return RestClient.create();
+    public RestClient openMeteoRestClient(RestClient.Builder builder) {
+        return builder
+                .baseUrl("https://historical-forecast-api.open-meteo.com")
+                .build();
     }
-
 }

@@ -1,6 +1,6 @@
 # SubegIA - Project goals and roadmap
 
-Last updated: 2026-10-22
+Last updated: 2026-10-31
 
 ## 1. Purpose
 
@@ -86,15 +86,15 @@ Package names, examples, source choices, and technical constraints live in [TECH
 
 ## 8. Incremental roadmap
 
-| Increment | Goal | Completion evidence |
+| Increment | Status on 2026-10-31 | Remaining work |
 |---|---|---|
-| 1 - Map foundation | Explore Gipuzkoa's 3D terrain, search locations, and draw/edit an area | Usable navigation and geographically correct selection |
-| 2 - Environmental inputs | Obtain the weather inputs needed for FWI across the selected area | Units, sources, dates, spatial coverage, and missing/stale states are explicit |
-| 3 - Explainable assessment | Show subarea FWI heatmap, details, and prevention guidance | Reproducible calculations, labeled categories, honest spatial support, and attributed guidance |
-| 4 - First public demo | Publish the MVP through HTTPS | Feasible EUR 0 deployment with clear outage/quota behavior |
-| 5 - Agent chat | Query data and supported map actions conversationally | Validated tool inputs, bounded usage, and source-backed responses |
-| 6 - First service extraction | Run a justified backend module independently | Independent contract, ownership, deployment, and failure behavior |
-| 7 - Propagation scenarios | Explore hypothetical spread over time | A separately specified model, sufficient inputs, and evaluation appropriate to any claims |
+| 1 - Map foundation | Angular/Cesium map and drawing code exist; backend validates Gipuzkoa coverage and generates clipped source-grid cells | Finish the map journey, selection-to-backend connection and remaining interaction/accessibility requirements |
+| 2 - Environmental inputs | AROME HD historical integration and hourly-to-daily preparation implemented; backend-owned experimental 365-day reconstruction approved | Reusable weather/state storage, seasonal/local initialization research, quotas and broader coverage checks |
+| 3 - Explainable assessment | Reference-checked domain FWI and per-cell GeoJSON/FWI response implemented; frontend sends only the area | Exercise the live HTTP flow; connect real heatmap/panel, experimental metadata, dates and unavailable states; complete explanations and official guidance |
+| 4 - First public demo | Pending | Verify EUR 0 hosting/service eligibility, HTTPS, privacy and outage/quota behavior |
+| 5 - Agent chat | Deferred | Validated backend/map actions, bounded usage and source-backed responses |
+| 6 - First service extraction | Deferred | Justified service boundary, independent ownership, contract and deployment |
+| 7 - Propagation scenarios | Deferred | Separately specified model, sufficient inputs and evaluation appropriate to its claims |
 
 These increments are provisional; later ordering can change for a documented reason. Public deployment may begin earlier. There is no fixed deadline.
 
@@ -118,19 +118,44 @@ Prepare and review this content in all three interface languages.
 
 ## 10. Current state and next work
 
-Completed preparation includes the product brief, initial audience and scope decisions, interaction requirements, authenticated AEMET/Open-Meteo sample requests, and a Cesium-based visual reference. This does not mean the full preparation milestones or application are complete.
+The repository now contains Angular/Cesium and a modular Spring Boot backend.
+The backend validates the selected polygon, generates clipped AROME HD cells,
+requests historical model weather, prepares standard-time daily inputs and
+calculates FWI separately per cell. It returns GeoJSON geometry, FWI/category,
+actual date, availability and moisture states. Equations and mocked HTTP/service
+flows have been checked; a successful live Postman assessment request has not
+yet been demonstrated. Local fire-danger accuracy is not established.
 
-The user plans to personalize the design in Figma next. No native Figma file has been created by the agent. The Angular application, Spring Boot application, real FWI calculation, full translations, and deployment are not implemented.
+`POST /api/v1/assessment` now requires only `area`. The user approved replacing
+caller-supplied states with a backend-owned experimental reconstruction:
+365 calculation days starting with FFMC/DMC/DC 85/6/15, plus the preceding
+day's weather for rainfall alignment. This supersedes the earlier explicit
+`initialStates` request. Responses expose `experimental`, `initialState`
+and actual `calculationDays`; initial values are assumptions, not measured
+local states. A longer history reduces initialization dependence but does
+not establish local fire-danger accuracy. Persisted updates and seasonal
+handling remain pending.
 
-Next work:
+| Next step | Status | Completion outcome |
+|---|---|---|
+| 1 - Real request verification | Pending | A Postman request containing only a valid area returns dated experimental FWI/GeoJSON results; missing-data and input errors remain explicit |
+| 2 - Angular assessment integration | Pending | Send only the selected area; handle loading/errors and render actual GeoJSON/FWI results; align the endpoint contract |
+| 3 - Heatmap and details | Pending | Category colors/legend, cell selection, FWI/date/source details, experimental notice and distinct unavailable states |
+| 4 - Reusable weather and daily states | Pending | Cache by model/source cell/date and persist versioned states/provenance; avoid annual downloads per polygon and duplicate concurrent requests |
+| 5 - API resource protection | Pending, required before public exposure | Configure rate limiting with 429 responses, concurrency and upstream quota protection, request/geometry complexity validation and production CORS; preserve timeouts and explicit errors |
+| 6 - Completion and evaluation of the MVP | In progress / pending | Finish ES/EU/EN, accessibility, official guidance, performance/privacy and broader weather tests; retain experimental initialization until better justified |
+| 7 - Public deployment | Pending | Feasible EUR 0 HTTPS hosting, verified service eligibility/quotas, production settings and outage behavior |
 
-1. Personalize the Figma layout and core screen states using the Cesium preview as reference.
-2. Define only the technical choices needed for the first working frontend/backend slice.
-3. Set up the applications and implement terrain navigation and polygon selection.
-4. Add a reference-checked calculation and weather integration, then the heatmap and panel.
-5. Complete remaining accessibility, privacy, performance, and deployment details incrementally.
+Rate limiting and concurrency protection are required before public exposure,
+not something to postpone until after release. No numeric limits or selection
+size cap have been approved; derive resource budgets from measurements and
+provider quotas, and request a decision before introducing user-facing caps.
+Caching does not replace these protections. Core exploration remains anonymous;
+login/JWT is not a confirmed MVP requirement.
 
-Keep one main implementation task in progress, with clear outcome, dependencies, and completion evidence. Use a repository, issues/project board, and Figma as appropriate; no repository or pull-request workflow exists in the current folder yet.
+Keep one main implementation task in progress, with clear outcome, dependencies,
+and completion evidence. Full translations, deployment and a completed Figma
+design have not been established by this checkpoint.
 
 ## 11. Continuing in another session
 
