@@ -1,4 +1,4 @@
-import { afterNextRender, Component, computed, DestroyRef, ElementRef, inject, Injector, NgZone, OnDestroy, signal, viewChild, WritableSignal } from '@angular/core';
+import { afterNextRender, Component, computed, DestroyRef, ElementRef, inject, Injector, model, NgZone, OnDestroy, signal, viewChild, WritableSignal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize, from, map, of, switchMap } from 'rxjs';
 import type { Cartesian2, Cartesian3, CustomDataSource, Entity, GeoJsonDataSource, ScreenSpaceEventHandler, Viewer } from 'cesium';
@@ -10,14 +10,17 @@ import { createExampleCells, EXAMPLE_AREA_COORDINATES, type Coordinate, type Dan
 import { isSimplePolygon } from './drawing-geometry';
 import { AssessmentService } from '../../../../../../api/assessment.service';
 import { AssessmentRequest, FWIRiskLevel, Position, SubAreaAssessment } from '../../../../../../api/Assessment';
+import { assessmentFailure, type AssessmentErrorKey } from '../../../../../../api/assessment-error';
+import { CoordinateEntryComponent } from '../coordinate-entry/coordinate-entry.component';
 
 @Component({
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, CoordinateEntryComponent],
   selector: 'app-cesium-map',
   styleUrl: './cesium-map.component.css',
   templateUrl: './cesium-map.component.html',
   host: {
-    '(keydown.escape)': 'closeConditions($event)',
+    '(keydown.escape)': 'handleMapEscape($event)',
+    '(keydown)': 'trapMapFocus($event)',
     '(window:resize)': 'updateLayout()',
   },
 })
@@ -40,6 +43,14 @@ export class CesiumMapComponent implements OnDestroy {
   private drawingSource?: CustomDataSource;
   private assessmentSource?: GeoJsonDataSource;
   readonly assessments = signal<SubAreaAssessment[]>([]);
+  readonly selectedAssessment = signal<SubAreaAssessment | null>(null);
+  private lastAssessmentRequest?: AssessmentRequest;
+  private assessmentSlowTimer?: ReturnType<typeof setTimeout>;
+  private retryTimer?: ReturnType<typeof setInterval>;
+  readonly assessmentSlow = signal(false);
+  readonly assessmentErrorKey = signal<AssessmentErrorKey>('infoPanel.assessmentError');
+  readonly retrySeconds = signal(0);
+  readonly assessmentEmpty = signal(false);
   private readonly assessmentByEntity = new Map<string, SubAreaAssessment>();
   private drawingHandler?: ScreenSpaceEventHandler;
   private readonly vertexEntities: Entity[] = [];
@@ -60,6 +71,14 @@ export class CesiumMapComponent implements OnDestroy {
   readonly assessmentError = signal(false);
   readonly drawingPoints = signal<Cartesian3[]>([]);
   readonly pointCount = computed(() => this.drawingPoints().length);
+  readonly drawingCoordinates = computed<Coordinate[]>(() => {
+    const Cesium = this.Cesium;
+    if (!Cesium) return [];
+    return this.drawingPoints().map(position => {
+      const location = Cesium.Cartographic.fromCartesian(position);
+      return [Cesium.Math.toDegrees(location.longitude), Cesium.Math.toDegrees(location.latitude)];
+    });
+  });
   readonly canFinishDrawing = computed(() =>
     this.pointCount() >= 3 && this.isValidDrawingOutline(this.drawingPoints()),
   );
@@ -73,7 +92,7 @@ export class CesiumMapComponent implements OnDestroy {
   readonly mapError = signal(false);
   readonly mapUnavailable = computed(() => this.mapLoading() || this.mapError());
   hiddeHeatMap: WritableSignal<boolean> = signal(false);
-  interactive: WritableSignal<boolean> = signal(false);
+  readonly interactive = model(false);
 
   constructor() {
     afterNextRender(() => {
@@ -119,7 +138,14 @@ export class CesiumMapComponent implements OnDestroy {
     this.conditionsOpen.set(false);
     this.interactive.update(v => !v);
     this.applyInteraction();
-    if (!this.interactive()) this.focusAfterRender(this.exploreButton());
+    if (this.interactive()) {
+      this.focusAfterRender(this.drawButton());
+    } else {
+      this.focusAfterRender(this.exploreButton());
+      afterNextRender(() => {
+        if (!this.destroyed && !this.interactive()) this.frameSelectedArea();
+      }, { injector: this.injector });
+    }
   }
 
   toggleConditions() {
@@ -139,12 +165,45 @@ export class CesiumMapComponent implements OnDestroy {
     this.focusAfterRender(this.conditionsButton());
   }
 
+  handleMapEscape(event: Event) {
+    const dialog = event.target instanceof Element ? event.target.closest('[role="dialog"]') : null;
+    if (dialog && !dialog.classList.contains('cesium-map')) return;
+    if (this.conditionsOpen()) {
+      this.closeConditions(event);
+    } else if (this.drawing()) {
+      event.stopPropagation();
+      this.cancelDrawing();
+    } else if (this.interactive()) {
+      event.stopPropagation();
+      this.toggleInteraction();
+    }
+  }
+
+  trapMapFocus(event: Event) {
+    if (!this.interactive() || !(event instanceof KeyboardEvent) || event.key !== 'Tab'
+      || !(event.currentTarget instanceof HTMLElement)) return;
+    const dialog = event.target instanceof Element ? event.target.closest('[role="dialog"]') : null;
+    const elements = Array.from((dialog ?? event.currentTarget).querySelectorAll<HTMLElement>(
+      'button:not(:disabled), a[href], input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [tabindex="0"], summary',
+    )).filter(element => element.getClientRects().length > 0
+      && !element.closest('[inert], [aria-hidden="true"]'));
+    const first = elements[0], last = elements.at(-1);
+    if (!first || !last) return;
+    const active = document.activeElement;
+    if (!elements.some(element => element === active) || (event.shiftKey && active === first)
+      || (!event.shiftKey && active === last)) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    }
+  }
+
   drawArea() {
-    if (!this.interactive() || this.drawing() || this.assessmentLoading()) return;
+    if (!this.interactive() || this.drawing() || this.assessmentLoading() || this.retrySeconds() > 0) return;
     this.conditionsOpen.set(false);
     this.drawingPoints.set([]);
     this.drawingMessage.set('');
     this.drawing.set(true);
+    this.selectAssessment(null);
     if (this.assessmentSource) this.assessmentSource.show = false;
     const selectedArea = this.drawingSource?.entities.getById('drawn-area');
     if (selectedArea) selectedArea.show = false;
@@ -163,10 +222,36 @@ export class CesiumMapComponent implements OnDestroy {
     this.requestMapRender();
   }
 
+  applyDrawingCoordinates(coordinates: Coordinate[]) {
+    const Cesium = this.Cesium;
+    const source = this.drawingSource;
+    const boundary = this.gipuzkoaBoundary;
+    if (!this.drawing() || this.assessmentLoading() || !Cesium || !source) return;
+    if (!boundary) {
+      this.drawingMessage.set('mapControls.drawing.coverageUnavailable');
+      return;
+    }
+    if (coordinates.some(point => !booleanPointInPolygon([point[0], point[1]], boundary))) {
+      this.drawingMessage.set('mapControls.drawing.outsideCoverage');
+      return;
+    }
+    if (!isSimplePolygon(coordinates)) {
+      this.drawingMessage.set('mapControls.drawing.invalidOutline');
+      return;
+    }
+    for (const vertex of this.vertexEntities) source.entities.remove(vertex);
+    this.vertexEntities.length = 0;
+    const points = coordinates.map(point => Cesium.Cartesian3.fromDegrees(point[0], point[1]));
+    this.drawingPoints.set(points);
+    for (const point of points) this.addVertexEntity(point);
+    this.drawingMessage.set('');
+    this.requestMapRender();
+  }
+
   finishDrawing() {
     const Cesium = this.Cesium;
     const source = this.drawingSource;
-    if (this.assessmentLoading() || !this.drawing() || this.pointCount() < 3 || !Cesium || !source) return;
+    if (this.assessmentLoading() || this.retrySeconds() > 0 || !this.drawing() || this.pointCount() < 3 || !Cesium || !source) return;
     if (!this.isValidDrawingOutline(this.drawingPoints())) {
       this.drawingMessage.set('mapControls.drawing.invalidOutline');
       return;
@@ -180,6 +265,7 @@ export class CesiumMapComponent implements OnDestroy {
       polygon: {
         hierarchy: new Cesium.PolygonHierarchy(positions),
         material: Cesium.Color.fromCssColorString('#b9d3a2').withAlpha(0.25),
+        height: 0,
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         classificationType: Cesium.ClassificationType.TERRAIN,
       },
@@ -211,11 +297,30 @@ export class CesiumMapComponent implements OnDestroy {
       },
     };
 
+    this.lastAssessmentRequest = request;
+    this.cancelDrawing();
+    this.requestAssessment(request);
+  }
+
+  retryAssessment() {
+    if (this.lastAssessmentRequest && !this.assessmentLoading() && !this.drawing() && this.retrySeconds() === 0) {
+      this.requestAssessment(this.lastAssessmentRequest);
+    }
+  }
+
+  private requestAssessment(request: AssessmentRequest) {
+    this.clearRetryTimer();
     this.assessmentError.set(false);
+    this.assessmentErrorKey.set('infoPanel.assessmentError');
+    this.assessmentSlow.set(false);
+    this.assessmentEmpty.set(false);
     this.clearAssessmentResults();
     this.hasSelectedArea.set(true);
+    if (this.exampleArea) this.exampleArea.show = false;
     this.assessmentLoading.set(true);
-    this.cancelDrawing();
+    this.assessmentSlowTimer = setTimeout(() => this.assessmentSlow.set(true), 10_000);
+    const polygon = this.drawingSource?.entities.getById('drawn-area')?.polygon;
+    if (polygon && this.Cesium) polygon.show = new this.Cesium.ConstantProperty(true);
     this.startAssessmentAnimation();
     if (this.useBottomSheet()) {
       this.conditionsOpen.set(true);
@@ -230,6 +335,8 @@ export class CesiumMapComponent implements OnDestroy {
         )),
       takeUntilDestroyed(this.destroyRef),
       finalize(() => {
+        clearTimeout(this.assessmentSlowTimer);
+        this.assessmentSlow.set(false);
         this.assessmentLoading.set(false);
         this.stopAssessmentAnimation();
       }),
@@ -237,6 +344,7 @@ export class CesiumMapComponent implements OnDestroy {
       {
         next: res => {
           this.assessments.set(res);
+          this.assessmentEmpty.set(res.length === 0);
           const polygon = this.drawingSource?.entities.getById('drawn-area')?.polygon;
           if (polygon && this.Cesium && res.length > 0) {
             polygon.show = new this.Cesium.ConstantProperty(false);
@@ -244,19 +352,73 @@ export class CesiumMapComponent implements OnDestroy {
         },
         error: (error: unknown) => {
           this.assessmentError.set(true);
+          const failure = assessmentFailure(error);
+          this.assessmentErrorKey.set(failure.key);
+          this.startRetryTimer(failure.retrySeconds);
           console.error('Could not calculate FWI', error);
         },
       }
     );
   }
 
+  private startRetryTimer(seconds: number) {
+    this.clearRetryTimer();
+    if (seconds <= 0) return;
+    const deadline = Date.now() + seconds * 1000;
+    this.retrySeconds.set(seconds);
+    this.retryTimer = setInterval(() => {
+      this.retrySeconds.set(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)));
+      if (this.retrySeconds() === 0) this.clearRetryTimer();
+    }, 1000);
+  }
+
+  private clearRetryTimer() {
+    clearInterval(this.retryTimer);
+    this.retryTimer = undefined;
+    this.retrySeconds.set(0);
+  }
+
   private clearAssessmentResults() {
+    this.selectAssessment(null);
     if (this.assessmentSource && this.viewer && !this.viewer.isDestroyed()) {
       this.viewer.dataSources.remove(this.assessmentSource, true);
     }
     this.assessmentSource = undefined;
     this.assessments.set([]);
     this.assessmentByEntity.clear();
+  }
+
+  private handleMapClick(position: Cartesian2) {
+    if (this.drawing()) {
+      this.pickDrawingPoint(position);
+      return;
+    }
+    const viewer = this.viewer;
+    const Cesium = this.Cesium;
+    if (!this.interactive() || this.assessmentLoading() || !viewer || viewer.isDestroyed() || !Cesium) return;
+    const picked: unknown = viewer.scene.pick(position);
+    const entity = picked && typeof picked === 'object' && 'id' in picked
+      && picked.id instanceof Cesium.Entity ? picked.id : undefined;
+    this.selectAssessment(entity ? this.assessmentByEntity.get(entity.id) ?? null : null);
+    if (this.selectedAssessment() && this.useBottomSheet()) this.conditionsOpen.set(true);
+  }
+
+  selectAssessment(result: SubAreaAssessment | null) {
+    if (this.drawing() || this.assessmentLoading()) result = null;
+    if (this.selectedAssessment() === result) return;
+    this.selectedAssessment.set(result);
+    const Cesium = this.Cesium;
+    if (Cesium && this.assessmentSource) {
+      for (const entity of this.assessmentSource.entities.values) {
+        if (!entity.polyline) continue;
+        const selected = result !== null && this.assessmentByEntity.get(entity.id) === result;
+        entity.polyline.width = new Cesium.ConstantProperty(selected ? 3 : 1.5);
+        entity.polyline.material = new Cesium.ColorMaterialProperty(
+          Cesium.Color.fromCssColorString(selected ? '#f0f2eb' : '#25362a').withAlpha(0.9),
+        );
+      }
+    }
+    this.requestMapRender();
   }
 
   private async loadAssessmentResults(results: SubAreaAssessment[]) {
@@ -409,6 +571,7 @@ export class CesiumMapComponent implements OnDestroy {
         ),
         show: new Cesium.CallbackProperty(() => this.canFinishDrawing(), false),
         material: color.withAlpha(0.25),
+        height: 0,
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         classificationType: Cesium.ClassificationType.TERRAIN,
       },
@@ -471,6 +634,14 @@ export class CesiumMapComponent implements OnDestroy {
     const point = Cesium.Cartesian3.clone(position);
     this.drawingPoints.update(points => [...points, point]);
     this.drawingMessage.set('');
+    this.addVertexEntity(point);
+    this.requestMapRender();
+  }
+
+  private addVertexEntity(point: Cartesian3) {
+    const Cesium = this.Cesium;
+    const source = this.drawingSource;
+    if (!Cesium || !source) return;
     this.vertexEntities.push(source.entities.add({
       position: point,
       point: {
@@ -482,7 +653,6 @@ export class CesiumMapComponent implements OnDestroy {
         disableDepthTestDistance: Number.POSITIVE_INFINITY,
       },
     }));
-    this.requestMapRender();
   }
 
   private isValidDrawingOutline(positions: readonly Cartesian3[]): boolean {
@@ -509,6 +679,16 @@ export class CesiumMapComponent implements OnDestroy {
       exampleArea,
       new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-40), 2500),
     ).catch((err) => console.error('Could not frame the example area', err));
+  }
+
+  private frameSelectedArea() {
+    const viewer = this.viewer;
+    const Cesium = this.Cesium;
+    const target = this.drawingSource?.entities.getById('drawn-area') ?? this.exampleArea;
+    if (!viewer || viewer.isDestroyed() || !Cesium || !target) return;
+    viewer.resize();
+    viewer.zoomTo(target, new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-40), 0))
+      .catch(error => console.error('Could not frame the selected area', error));
   }
 
   private applyInteraction() {
@@ -538,6 +718,10 @@ export class CesiumMapComponent implements OnDestroy {
     extreme: '#c95c68',
     veryExtreme: '#915c83',
   };
+  readonly riskRanges: Record<Danger, string> = {
+    low: '< 11.2', moderate: '11.2 – < 21.3', high: '21.3 – < 38',
+    veryHigh: '38 – < 50', extreme: '50 – 70', veryExtreme: '> 70',
+  };
   private readonly riskColors: Record<FWIRiskLevel, Danger> = {
     LOW: 'low',
     MODERATE: 'moderate',
@@ -560,6 +744,7 @@ export class CesiumMapComponent implements OnDestroy {
       polygon: {
         hierarchy: new Cesium.PolygonHierarchy(positions),
         material: color.withAlpha(0.55),
+        height: 0,
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         classificationType: Cesium.ClassificationType.TERRAIN,
       },
@@ -584,6 +769,7 @@ export class CesiumMapComponent implements OnDestroy {
       polygon: {
         hierarchy: new Cesium.PolygonHierarchy(positions),
         fill: false,
+        height: 0,
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         classificationType: Cesium.ClassificationType.TERRAIN,
       },
@@ -685,7 +871,7 @@ export class CesiumMapComponent implements OnDestroy {
         this.drawingHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
         this.drawingHandler.setInputAction(
           (event: ScreenSpaceEventHandler.PositionedEvent) => {
-            this.zone.run(() => this.pickDrawingPoint(event.position));
+            this.zone.run(() => this.handleMapClick(event.position));
           },
           Cesium.ScreenSpaceEventType.LEFT_CLICK,
         );
@@ -804,6 +990,8 @@ export class CesiumMapComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.destroyed = true;
+    clearTimeout(this.assessmentSlowTimer);
+    this.clearRetryTimer();
     this.stopAssessmentAnimation();
     clearTimeout(this.mapLoadTimeout);
     this.cancelMapLoad?.();

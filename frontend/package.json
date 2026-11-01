@@ -4,9 +4,10 @@
   "scripts": {
     "ng": "ng",
     "start": "npm run config && ng serve",
-    "build": "npm run config && ng build",
+    "build": "npm run config -- --production && ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:config": "node --test scripts/set-env.test.mjs",
     "config": "node scripts/set-env.mjs"
   },
   "private": true,
@@ -21,12 +22,12 @@
     "@fontsource-variable/inter": "^5.3.0",
     "@ngx-translate/core": "^18.0.0",
     "@ngx-translate/http-loader": "^18.0.0",
-    "@turf/boolean-point-in-polygon": "^7.2.0",
     "@turf/area": "^7.2.0",
+    "@turf/boolean-point-in-polygon": "^7.2.0",
     "cesium": "^1.146.0",
     "dotenv-webpack": "^9.0.0",
-    "rxjs": "~7.8.0",
     "robust-predicates": "^3.0.3",
+    "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
@@ -34,6 +35,7 @@
     "@angular/cli": "^22.1.4",
     "@angular/compiler-cli": "^22.1.0",
     "@types/geojson": "^7946.0.16",
+    "axe-core": "^4.14.0",
     "dotenv": "^18.0.9",
     "jsdom": "^28.0.0",
     "prettier": "^3.8.1",

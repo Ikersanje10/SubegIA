@@ -1,6 +1,6 @@
 # SubegIA - Project goals and roadmap
 
-Last updated: 2026-10-31
+Last updated: 2026-11-01
 
 ## 1. Purpose
 
@@ -99,7 +99,12 @@ percentages by category and with/without data, and distinct dates/models from
 the response. Turf area accounts for clipped geometries, holes and multipolygons.
 Category percentages use the whole returned surface as denominator; missing
 data never counts as zero FWI. Empty/all-unavailable responses show no score.
-Mixed available dates are explicitly flagged. Subarea clicking remains pending.
+Mixed available dates are explicitly flagged. Subareas can now be selected by
+map click (including their borders/multipolygon parts) or a keyboard-accessible
+panel selector. Selected borders are highlighted and the panel shows that
+subarea's FWI/category, date, model, source coordinates, calculation days and
+moisture codes when available. Clearing selection restores the summary;
+drawing or submitting a new area clears detail selection.
 The selected Cesium polygon now pulses in
 grey-sage transparency during the request and returns to a neutral fill on
 completion/error. Its outline is preserved. The render loop runs only during
@@ -121,12 +126,12 @@ Package names, examples, source choices, and technical constraints live in [TECH
 
 ## 8. Incremental roadmap
 
-| Increment | Status on 2026-10-31 | Remaining work |
+| Increment | Status on 2026-11-01 | Remaining work |
 |---|---|---|
-| 1 - Map foundation | Angular/Cesium map and drawing code exist; backend validates Gipuzkoa coverage and generates clipped source-grid cells | Finish the map journey, selection-to-backend connection and remaining interaction/accessibility requirements |
+| 1 - Map foundation | Connected map, pointer/keyboard polygon entry and clipped source-grid cells implemented | Complete manual accessibility and deployed interaction checks |
 | 2 - Environmental inputs | AROME HD historical integration and hourly-to-daily preparation implemented; backend-owned experimental 365-day reconstruction approved | Reusable weather/state storage, seasonal/local initialization research, quotas and broader coverage checks |
-| 3 - Explainable assessment | Reference-checked domain FWI and per-cell GeoJSON/FWI response implemented; frontend sends only the area | Exercise the live HTTP flow; connect real heatmap/panel, experimental metadata, dates and unavailable states; complete explanations and official guidance |
-| 4 - First public demo | Pending | Verify EUR 0 hosting/service eligibility, HTTPS, privacy and outage/quota behavior |
+| 3 - Explainable assessment | Real heatmap, details, actual dates, availability, loading/retry and ES/EU/EN explanations implemented; user confirmed a live assessment | Preserve numerical regressions and verify the deployed flow; local accuracy remains unestablished |
+| 4 - First public demo | Pending; hosting undecided | Select hosting, verify HTTPS/privacy, provider quotas, proxy behavior and resource budgets |
 | 5 - Agent chat | Deferred | Validated backend/map actions, bounded usage and source-backed responses |
 | 6 - First service extraction | Deferred | Justified service boundary, independent ownership, contract and deployment |
 | 7 - Propagation scenarios | Deferred | Separately specified model, sufficient inputs and evaluation appropriate to its claims |
@@ -158,8 +163,8 @@ The backend validates the selected polygon, generates clipped AROME HD cells,
 requests historical model weather, prepares standard-time daily inputs and
 calculates FWI separately per cell. It returns GeoJSON geometry, FWI/category,
 actual date, availability and moisture states. Equations and mocked HTTP/service
-flows have been checked; a successful live Postman assessment request has not
-yet been demonstrated. Local fire-danger accuracy is not established.
+flows have been checked; the user has confirmed a successful live Angular
+assessment. Local fire-danger accuracy is not established.
 
 `POST /api/v1/assessment` now requires only `area`. The user approved replacing
 caller-supplied states with a backend-owned experimental reconstruction:
@@ -173,24 +178,107 @@ handling remain pending.
 
 | Next step | Status | Completion outcome |
 |---|---|---|
-| 1 - Real request verification | Pending | A Postman request containing only a valid area returns dated experimental FWI/GeoJSON results; missing-data and input errors remain explicit |
-| 2 - Angular assessment integration | Pending | Send only the selected area; handle loading/errors and render actual GeoJSON/FWI results; align the endpoint contract |
-| 3 - Heatmap and details | Pending | Category colors/legend, cell selection, FWI/date/source details, experimental notice and distinct unavailable states |
-| 4 - Reusable weather and daily states | Pending | Cache by model/source cell/date and persist versioned states/provenance; avoid annual downloads per polygon and duplicate concurrent requests |
-| 5 - API resource protection | Pending, required before public exposure | Configure rate limiting with 429 responses, concurrency and upstream quota protection, request/geometry complexity validation and production CORS; preserve timeouts and explicit errors |
-| 6 - Completion and evaluation of the MVP | In progress / pending | Finish ES/EU/EN, accessibility, official guidance, performance/privacy and broader weather tests; retain experimental initialization until better justified |
-| 7 - Public deployment | Pending | Feasible EUR 0 HTTPS hosting, verified service eligibility/quotas, production settings and outage behavior |
+| 1 - Angular integration, heatmap and details | Implemented | Typed response, loading/error states, real subarea colors/borders, area summary and map/keyboard subarea selection |
+| 2 - Frontend improvements | Implemented with bounded browser checks | Typed errors/Retry-After, translated explanations, keyboard polygon entry and modal focus/background handling; full manual accessibility remains unproven |
+| 3 - Backend cache | Implemented, local to one instance | Bounded successful-result cache, same-cell/date deduplication and one-minute deferred-result cache; persisted daily states remain later work |
+| 4 - API resource protection | Rate limiting and configurable CORS implemented; global budgets deferred | Derive concurrency/upstream/geometry budgets from the selected server and provider quotas; user-facing numeric caps need approval |
+| 5 - Public deployment | API/CORS configurable; hosting undecided | Choose hosting, configure real origins and trusted proxies, verify HTTPS/quotas and the complete deployed flow |
 
-Rate limiting and concurrency protection are required before public exposure,
-not something to postpone until after release. No numeric limits or selection
-size cap have been approved; derive resource budgets from measurements and
-provider quotas, and request a decision before introducing user-facing caps.
+The dated notes below record the progression of the review; the current table
+and final stabilization note supersede earlier pending items.
+
+Mini frontend review (2026-11-01, source review, not a visual or AXE audit):
+obsolete prototype statements remain in public translations; the service API URL
+is hardcoded to localhost; legend categories are tooltip-only visually; risk
+badges always use warning styling; long safety copy and 11px text need a readability
+pass. Improve retry without redrawing and distinguish empty/malformed responses.
+Validate runtime response shape before calculating/rendering, because HttpClient
+generics do not validate JSON. Test layout, keyboard focus and reduced-motion on
+actual browsers before claiming accessibility compliance. Closing the expanded
+map now resizes and zooms to the whole selection, or the example if none exists.
+
+High-priority follow-up implemented: initial example and project status copy
+now distinguish fictitious examples from connected experimental assessments.
+The how-it-works section explains FWI inputs, daily codes, 365-day assumptions,
+model spatial support and limitations in ES/EU/EN. Runtime JSON validation rejects
+malformed cells, geometries, dates and duplicates before rendering; failures use
+the explicit assessment error path. Errors/empty responses can be retried with
+the original polygon. The legend now has visible category names, EFFIS thresholds
+and a separate no-data swatch for real results. Browser/AXE review, production URL,
+further readability refinements, cache and endpoint protection remain pending.
+
+Remaining source-level frontend refinements implemented: larger panel body,
+notice and badge typography with increased line-height; wrapped readings/buttons
+for narrow layouts; category badges use the FWI palette with dark tinted surfaces
+and light text. The shorter experimental notice links to the full explanation.
+Map action buttons and language buttons have 44px minimum height, visible focus
+styles and explicit disabled styling where appropriate. Selected language text
+uses dark-on-accent contrast; the rejected language hover has not been restored.
+Actual-browser visual/AXE checks and keyboard polygon entry remain unresolved;
+these source changes do not establish full WCAG compliance. Deployment settings,
+cache and endpoint protection were not changed.
+
+Manual per-cell cache integration (2026-11-01): FireRiskService retrieves typed
+WeatherCacheableData by source center and calculation-version key. Only values
+whose actual weather date matches the target date are reused; missing/stale
+cells form the weather request, and results retain original order/current
+clipped geometries. Successful calculations replace the existing key; unavailable
+results are not cached. Caffeine is now configured with the user-approved
+maximum of 2,000 entries and expiration 48 hours after writing. Reads do not
+extend expiration, and date validity is still checked before reuse. Refresh
+remains demand-driven, not a scheduled daily download. A short retry delay for
+incomplete current-day data remains a separate possible improvement.
+
+Concurrent deduplication now uses shared futures per source cell/calculation
+version/target date. A short registry monitor atomically assigns ownership;
+network calls, calculations and waits occur outside it. Each request calculates
+its owned batch before waiting for other owners, avoiding cyclic batch waits.
+Successful, unavailable and exceptional outcomes reach all waiters; owned
+registrations are removed in finally, and interrupted waits restore interrupt
+status. Geometry remains request-specific and a late older-date calculation
+cannot replace a newer cached date. This coordinates one backend instance only;
+it does not limit concurrency for different cells or replace rate limiting.
+
+Local rate limiting now protects only POST /api/v1/assessment: Bucket4j keeps
+five tokens per IP and refills all five together every minute using interval refill.
+Caffeine stores up to 100,000 buckets, expiring after ten minutes without access.
+Capacity eviction and application restarts can reset a client's quota; replicas
+do not share buckets. CORS runs before rate limiting, defaults to localhost:4200,
+accepts explicitly configured origins through CORS_ALLOWED_ORIGINS,
+and exposes Retry-After and X-Rate-Limit-Remaining. Rejections return HTTP 429
+using ApiErrorResponse with code RATE_LIMIT_EXCEEDED; preflight requests do not
+consume tokens. Deployment still needs a production origin and trusted-proxy
+configuration for client IP identification.
+
+Concurrency and upstream quota protection are still required before public
+exposure. No selection size cap has been approved; derive remaining resource
+budgets from measurements and provider quotas, and request a decision before
+introducing further user-facing caps.
 Caching does not replace these protections. Core exploration remains anonymous;
 login/JWT is not a confirmed MVP requirement.
 
-Keep one main implementation task in progress, with clear outcome, dependencies,
-and completion evidence. Full translations, deployment and a completed Figma
-design have not been established by this checkpoint.
+Non-hosting stabilization completed (2026-11-01): missing-data and yesterday
+fallback outcomes are reused for at most one minute, without extending the
+deadline on reads; network failures remain immediately retryable. Successful
+target-date results still take precedence. Deterministic clock-based tests
+cover retry expiry, fallback freshness and current-request geometry.
+
+The keyboard editor atomically validates/replaces the draft. Header/language
+names, document language, heading order and attribution contrast were corrected.
+Expanded-map focus wraps in both directions; other page sections become inert.
+Escape closes conditions first, then cancels drawing, then closes the workspace.
+Live-browser checks of the initial ES/EU/EN page and expanded/drawing states
+detected no AXE violations. This is not full WCAG certification: incomplete
+contrast checks, manual screen-reader coverage and broader layouts remain.
+CI also checks header/editor semantics; contrast needs a real browser.
+
+Backend verification, frontend tests/config validation and production compilation
+pass. CSS warning budgets for map/panel and Cesium optimization warnings remain.
+Hosting, global resource/proxy configuration, deployed acceptance checks and a
+completed Figma design are not established. No concurrency or polygon-size
+policy was introduced while the hosting decision is deferred. Docker files,
+hosting-measurement scripts/results and the hosting-only health endpoint were
+removed at the user's request; functional tests and CI remain.
 
 ## 11. Continuing in another session
 

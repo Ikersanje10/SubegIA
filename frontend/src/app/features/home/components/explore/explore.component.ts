@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, model } from '@angular/core';
 import { CesiumMapComponent } from './components/cesium-map/cesium-map.component';
 import { InfoPanelComponent } from './components/info-panel/info-panel.component';
 
@@ -11,4 +11,5 @@ import { InfoPanelComponent } from './components/info-panel/info-panel.component
   templateUrl: './explore.component.html',
 })
 export class ExploreComponent {
+  readonly mapExpanded = model(false);
 }

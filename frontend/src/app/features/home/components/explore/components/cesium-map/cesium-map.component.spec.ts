@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideTranslateService, TranslateService } from '@ngx-translate/core';
 import { vi } from 'vitest';
 import { of, Subject } from 'rxjs';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { AssessmentService } from '../../../../../../api/assessment.service';
 import type { AssessmentRequest, SubAreaAssessment } from '../../../../../../api/Assessment';
 import * as Cesium from 'cesium';
@@ -495,6 +495,30 @@ describe('CesiumMapComponent', () => {
     expect(element.textContent).not.toContain('Centrar terreno');
   });
 
+  it('frames the selected area after closing, falling back to the example if no selection exists', async () => {
+    const source = new Cesium.CustomDataSource();
+    const example = new Cesium.Entity({ id: 'example' });
+    component['Cesium'] = Cesium;
+    component['drawingSource'] = source;
+    component['exampleArea'] = example;
+    const zoomTo = vi.fn().mockResolvedValue(true);
+    const resize = vi.fn();
+    Object.defineProperty(component, 'viewer', { value: {
+      isDestroyed: () => false, destroy: vi.fn(), resize, zoomTo,
+      scene: { requestRender: vi.fn(), canvas: { style: {} }, screenSpaceCameraController: {} },
+    }, writable: true });
+    component.toggleInteraction();
+    component.toggleInteraction();
+    await fixture.whenStable();
+    expect(resize).toHaveBeenCalledOnce();
+    expect(zoomTo).toHaveBeenLastCalledWith(example, expect.any(Cesium.HeadingPitchRange));
+    const selected = source.entities.add({ id: 'drawn-area' });
+    component.toggleInteraction();
+    component.toggleInteraction();
+    await fixture.whenStable();
+    expect(zoomTo).toHaveBeenLastCalledWith(selected, expect.any(Cesium.HeadingPitchRange));
+  });
+
   it('updates exploration and drawing controls, counts and existing errors when switching languages', async () => {
     const translate = TestBed.inject(TranslateService);
     const element: HTMLElement = fixture.nativeElement;
@@ -571,7 +595,9 @@ describe('CesiumMapComponent', () => {
         expect(swatches[index].title).toBe(translations.mapLegend.levels[level]);
         const expected = document.createElement('span');
         expected.style.backgroundColor = component.colors[level];
-        expect(swatches[index].style.backgroundColor).toBe(expected.style.backgroundColor);
+        expect(swatches[index].querySelector<HTMLElement>('.legend-swatch')?.style.backgroundColor).toBe(expected.style.backgroundColor);
+        expect(swatches[index].textContent).toContain(translations.mapLegend.levels[level]);
+        expect(swatches[index].textContent).toContain(component.riskRanges[level]);
       });
       expect(element.querySelector('.legend-range')?.textContent).toContain(translations.mapLegend.lower);
       expect(element.querySelector('.legend-range')?.textContent).toContain(translations.mapLegend.higher);
@@ -1072,6 +1098,46 @@ describe('CesiumMapComponent', () => {
       expect(component.drawingMessage()).toBe('');
     });
 
+    it('wraps both Tab and Shift+Tab inside the expanded map and supports Escape', async () => {
+      component.drawArea();
+      await fixture.whenStable();
+      const first = fixture.nativeElement.querySelector('.drawingPanel > button') as HTMLButtonElement;
+      const last = fixture.nativeElement.querySelector('.drawingActions button:last-child') as HTMLButtonElement;
+      const rectangles = Object.assign([new DOMRect()], {
+        item: (index: number) => index === 0 ? new DOMRect() : null,
+      });
+      vi.spyOn(first, 'getClientRects').mockReturnValue(rectangles);
+      vi.spyOn(last, 'getClientRects').mockReturnValue(rectangles);
+      last.focus();
+      last.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+      expect(document.activeElement).toBe(first);
+      first.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }));
+      expect(document.activeElement).toBe(last);
+      last.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      expect(component.interactive()).toBe(true);
+      expect(component.drawing()).toBe(false);
+      last.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      expect(component.interactive()).toBe(false);
+    });
+
+    it('applies keyboard coordinates atomically and preserves the draft on invalid input', () => {
+      component.drawArea();
+      component.applyDrawingCoordinates([[-2.49, 43.06], [-2.48, 43.06], [-2.48, 43.07]]);
+      expect(component.pointCount()).toBe(3);
+      expect(component.canFinishDrawing()).toBe(true);
+      expect(source.entities.values.filter(entity => entity.point)).toHaveLength(3);
+      expect(calculateFWI).not.toHaveBeenCalled();
+      const points = component.drawingPoints();
+      component.applyDrawingCoordinates([[-3, 43], [-3.1, 43], [-3, 43.1]]);
+      expect(component.drawingMessage()).toBe('mapControls.drawing.outsideCoverage');
+      expect(component.drawingPoints()).toBe(points);
+      component.applyDrawingCoordinates([[-2.49, 43.06], [-2.48, 43.07], [-2.49, 43.07], [-2.48, 43.06]]);
+      expect(component.drawingMessage()).toBe('mapControls.drawing.invalidOutline');
+      expect(component.drawingPoints()).toBe(points);
+      component.undoDrawingPoint();
+      expect(component.pointCount()).toBe(2);
+    });
+
     it('should count points, preview the shape, and enable finishing at exactly three', async () => {
       component.drawArea();
       const time = Cesium.JulianDate.now();
@@ -1197,13 +1263,60 @@ describe('CesiumMapComponent', () => {
         expect(log).toHaveBeenCalledWith('Could not calculate FWI', error);
 
         calculateFWI.mockReturnValue(new Subject<never[]>());
-        component.drawArea();
-        addPoints(3);
-        component.finishDrawing();
+        const original = source.entities.getById('drawn-area');
+        component.retryAssessment();
+        expect(source.entities.getById('drawn-area')).toBe(original);
+        expect(calculateFWI.mock.calls[1][0]).toEqual(calculateFWI.mock.calls[0][0]);
         expect(component.assessmentError()).toBe(false);
         expect(component.assessmentLoading()).toBe(true);
       } finally {
         log.mockRestore();
+      }
+    });
+
+    it('marks an empty backend response separately from an error', () => {
+      component.drawArea();
+      addPoints(3);
+      component.finishDrawing();
+      expect(component.assessmentEmpty()).toBe(true);
+      expect(component.assessmentError()).toBe(false);
+      expect(component.assessmentLoading()).toBe(false);
+    });
+
+    it('honors Retry-After before allowing another assessment and clears timers on destruction', () => {
+      vi.useFakeTimers();
+      const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      try {
+        const response = new Subject<never[]>();
+        calculateFWI.mockReturnValue(response);
+        component.drawArea();
+        addPoints(3);
+        component.finishDrawing();
+        response.error(new HttpErrorResponse({
+          status: 429, headers: new HttpHeaders({ 'Retry-After': '2' }),
+        }));
+        expect(component.assessmentErrorKey()).toBe('infoPanel.errors.rateLimited');
+        expect(component.retrySeconds()).toBe(2);
+        component.retryAssessment();
+        component.drawArea();
+        expect(calculateFWI).toHaveBeenCalledOnce();
+        expect(component.drawing()).toBe(false);
+        vi.advanceTimersByTime(1000);
+        expect(component.retrySeconds()).toBe(1);
+        vi.advanceTimersByTime(1000);
+        expect(component.retrySeconds()).toBe(0);
+        const nextResponse = new Subject<never[]>();
+        calculateFWI.mockReturnValue(nextResponse);
+        component.retryAssessment();
+        expect(calculateFWI).toHaveBeenCalledTimes(2);
+        vi.advanceTimersByTime(10_000);
+        expect(component.assessmentSlow()).toBe(true);
+        fixture.destroy();
+        expect(component.assessmentSlow()).toBe(false);
+        expect(component.retrySeconds()).toBe(0);
+      } finally {
+        log.mockRestore();
+        vi.useRealTimers();
       }
     });
 
@@ -1284,7 +1397,7 @@ describe('CesiumMapComponent', () => {
       const dataSources = new Cesium.DataSourceCollection();
       const viewer = {
         dataSources,
-        scene: { requestRender: vi.fn() },
+        scene: { requestRender: vi.fn(), pick: vi.fn() },
         isDestroyed: () => false,
         destroy: vi.fn(),
       };
@@ -1323,7 +1436,19 @@ describe('CesiumMapComponent', () => {
         expect(entity.polygon!.material!.getValue(time).color)
           .toEqual(Cesium.Color.fromCssColorString(expected).withAlpha(0.65));
       }
+      const pickedEntity = layer.entities.values.find(entity => entity.polygon)!;
+      const pick = vi.fn(() => ({ id: pickedEntity }));
+      Object.assign(viewer.scene, { pick });
+      component['handleMapClick'](new Cesium.Cartesian2(10, 20));
+      expect(component.selectedAssessment()).toBe(component['assessmentByEntity'].get(pickedEntity.id));
+      const selected = component.selectedAssessment();
+      for (const entity of layer.entities.values) {
+        if (entity.polyline && component['assessmentByEntity'].get(entity.id) === selected) {
+          expect(entity.polyline.width?.getValue(time)).toBe(3);
+        }
+      }
       component.drawArea();
+      expect(component.selectedAssessment()).toBeNull();
       expect(layer.show).toBe(false);
       component.cancelDrawing();
       expect(layer.show).toBe(true);

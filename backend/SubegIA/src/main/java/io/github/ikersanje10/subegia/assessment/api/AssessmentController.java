@@ -10,7 +10,6 @@ import tools.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/api/v1/assessment")
-@CrossOrigin(origins = "http://localhost:4200")
 public class AssessmentController {
 
     private AssessmentService assessmentService;

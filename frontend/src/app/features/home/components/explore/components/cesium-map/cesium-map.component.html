@@ -2,6 +2,9 @@
   class="cesium-map"
   [class.fullScreen]="interactive()"
   [class.map-unavailable]="mapUnavailable()"
+  [attr.role]="interactive() ? 'dialog' : null"
+  [attr.aria-modal]="interactive() ? 'true' : null"
+  [attr.aria-label]="interactive() ? ('mapControls.title' | translate) : null"
 >
   @if (mapLoading()) {
     <div class="map-loading" role="status" aria-live="polite" aria-atomic="true">
@@ -30,21 +33,27 @@
       [class.hidden]="!hasSelectedArea() && (drawing() || hiddeHeatMap())"
       aria-labelledby="fwi-legend-title"
     >
-      <h3 id="fwi-legend-title">{{ 'mapLegend.title' | translate }}</h3>
+      <h2 id="fwi-legend-title">{{ (hasSelectedArea() ? 'mapLegend.actualTitle' : 'mapLegend.title') | translate }}</h2>
       <ul class="legend-scale" role="list">
         @for (level of dangerLevels; track level) {
           <li
-            [style.background-color]="colors[level]"
             [attr.aria-label]="'mapLegend.levels.' + level | translate"
             [attr.title]="'mapLegend.levels.' + level | translate"
-          ></li>
+          >
+            <span class="legend-swatch" [style.background-color]="colors[level]" aria-hidden="true"></span>
+            <span>{{ 'mapLegend.levels.' + level | translate }}</span>
+            <span class="legend-threshold">{{ riskRanges[level] }}</span>
+          </li>
         }
       </ul>
       <div class="legend-range">
         <span>{{ 'mapLegend.lower' | translate }}</span>
         <span>{{ 'mapLegend.higher' | translate }}</span>
       </div>
-      <p>{{ 'mapLegend.notice' | translate }}</p>
+      @if (hasSelectedArea()) {
+        <p><span class="legend-swatch unavailable-swatch" aria-hidden="true"></span> {{ 'mapLegend.unavailable' | translate }}</p>
+      }
+      <p>{{ (hasSelectedArea() ? 'mapLegend.actualNotice' : 'mapLegend.notice') | translate }}</p>
     </aside>
     <div class="exploreMapContainer" [class.hidden]="interactive()">
       <div class="textContainer">
@@ -64,7 +73,7 @@
     </div>
     <div class="mapControls" [class.hidden]="!interactive() || drawing()">
       <div class="controlButtonsContainer">
-        <button #drawButton class="drawArea" (click)="drawArea()" [attr.aria-disabled]="assessmentLoading()">{{ 'mapControls.draw' | translate }}</button>
+        <button #drawButton class="drawArea" (click)="drawArea()" [attr.aria-disabled]="assessmentLoading() || retrySeconds() > 0">{{ 'mapControls.draw' | translate }}</button>
         <button class="closeMap" (click)="toggleInteraction()">{{ 'mapControls.close' | translate }}</button>
       </div>
       <p>{{ 'mapControls.navigationHint' | translate }}</p>
@@ -90,6 +99,8 @@
       @if (drawingMessage()) {
         <p role="alert">{{ drawingMessage() | translate }}</p>
       }
+      <app-coordinate-entry [coordinates]="drawingCoordinates()"
+        (coordinatesSubmitted)="applyDrawingCoordinates($event)"></app-coordinate-entry>
     </div>
 
     <div class="mapExampleControls" [class.hidden]="!interactive() || drawing() || hasSelectedArea()">

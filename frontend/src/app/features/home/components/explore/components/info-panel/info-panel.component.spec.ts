@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { provideTranslateService, TranslateService } from '@ngx-translate/core';
 import en from '../../../../../../../../public/i18n/en.json';
 import es from '../../../../../../../../public/i18n/es.json';
@@ -40,6 +41,28 @@ describe('InfoPanelComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('explains the rate limit and disables retry until the delay expires', async () => {
+    fixture.componentRef.setInput('assessmentError', true);
+    fixture.componentRef.setInput('assessmentErrorKey', 'infoPanel.errors.rateLimited');
+    fixture.componentRef.setInput('retrySeconds', 12);
+    await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector('[role="alert"]')?.textContent).toBe(es.infoPanel.errors.rateLimited);
+    expect(element.textContent).toContain(es.infoPanel.retryAfter.replace('{{seconds}}', '12'));
+    expect(element.querySelector<HTMLButtonElement>('.retry-assessment')?.disabled).toBe(true);
+    fixture.componentRef.setInput('retrySeconds', 0);
+    await fixture.whenStable();
+    expect(element.querySelector<HTMLButtonElement>('.retry-assessment')?.disabled).toBe(false);
+  });
+
+  it('explains long initial requests without claiming that the provider has failed', async () => {
+    fixture.componentRef.setInput('loading', true);
+    fixture.componentRef.setInput('assessmentSlow', true);
+    await fixture.whenStable();
+    expect(fixture.nativeElement.textContent).toContain(es.infoPanel.slow);
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
+  });
+
   it('replaces example copy after area submission without restoring the fake score', async () => {
     const element: HTMLElement = fixture.nativeElement;
     fixture.componentRef.setInput('hasSelectedArea', true);
@@ -75,6 +98,8 @@ describe('InfoPanelComponent', () => {
     const element: HTMLElement = fixture.nativeElement;
     expect(element.querySelector('.fwi-reading strong')?.textContent).toBe('30.0');
     expect(element.querySelector('.danger-badge')?.textContent).toBe(es.mapLegend.levels.high);
+    expect(element.querySelector('.danger-badge')?.getAttribute('data-risk')).toBe('HIGH');
+    expect(element.querySelector('.fwi-explanation-link')?.getAttribute('href')).toBe('#fwi-explanation-title');
     expect(element.querySelector('.summary-distribution')?.textContent).toContain('75.0%');
     expect(element.querySelector('.summary-distribution')?.textContent).toContain('25.0%');
     expect(element.querySelector('time')?.getAttribute('datetime')).toBe('2026-11-01');
@@ -83,6 +108,31 @@ describe('InfoPanelComponent', () => {
     await fixture.whenStable();
     expect(element.querySelector('.summary-distribution')).toBeNull();
     expect(element.querySelector('app-skeleton')).not.toBeNull();
+  });
+
+  it('shows selected subarea details and returns to the area summary when cleared', async () => {
+    const result = assessmentFixture(1);
+    fixture.componentRef.setInput('hasSelectedArea', true);
+    fixture.componentRef.setInput('assessments', [result]);
+    fixture.componentRef.setInput('selectedAssessment', result);
+    await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector('.subarea-detail .fwi-reading strong')?.textContent).toBe('5.0');
+    expect(element.querySelector('.summary-distribution')).toBeNull();
+    const select = element.querySelector<HTMLSelectElement>('select')!;
+    expect(select.value).toBe('0:0');
+    const emit = vi.spyOn(component.assessmentSelected, 'emit');
+    select.value = '';
+    select.dispatchEvent(new Event('change'));
+    expect(emit).toHaveBeenCalledWith(null);
+    fixture.componentRef.setInput('selectedAssessment', null);
+    await fixture.whenStable();
+    expect(element.querySelector('.subarea-detail')).toBeNull();
+    expect(element.querySelector('.summary-distribution')).not.toBeNull();
+    fixture.componentRef.setInput('selectedAssessment', { ...result, status: 'UNAVAILABLE', fwi: null, riskLevel: null, unavailableReason: 'Missing weather' });
+    await fixture.whenStable();
+    expect(element.querySelector('.subarea-detail .fwi-reading')).toBeNull();
+    expect(element.querySelector('.subarea-detail')?.textContent).toContain('Missing weather');
   });
 
   it('replaces result and context fields with decorative skeletons while loading', async () => {

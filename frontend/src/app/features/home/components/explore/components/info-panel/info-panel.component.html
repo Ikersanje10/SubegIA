@@ -1,6 +1,17 @@
 <p class="assessment-status" role="status" aria-atomic="true" [textContent]="loading() ? ('infoPanel.loading' | translate) : ''"></p>
 @if (assessmentError()) {
-  <p class="assessment-error" role="alert">{{ 'infoPanel.assessmentError' | translate }}</p>
+  <p class="assessment-error" role="alert">{{ assessmentErrorKey() | translate }}</p>
+  @if (retrySeconds() > 0) {
+    <p class="result-hint">{{ 'infoPanel.retryAfter' | translate: { seconds: retrySeconds() } }}</p>
+  }
+  <button class="retry-assessment" type="button" [disabled]="loading() || retrySeconds() > 0" (click)="retryRequested.emit()">{{ 'infoPanel.retry' | translate }}</button>
+}
+@if (loading() && assessmentSlow()) {
+  <p class="result-hint" role="status">{{ 'infoPanel.slow' | translate }}</p>
+}
+@if (assessmentEmpty() && !loading()) {
+  <p class="assessment-error" role="status">{{ 'infoPanel.empty' | translate }}</p>
+  <button class="retry-assessment" type="button" (click)="retryRequested.emit()">{{ 'infoPanel.retry' | translate }}</button>
 }
 <aside class="info-panel" aria-labelledby="info-panel-title" [attr.aria-busy]="loading()">
   <header class="panel-header">
@@ -10,7 +21,44 @@
   </header>
 
   <p class="demo-notice">{{ (hasSelectedArea() ? 'infoPanel.selected.notice' : 'infoPanel.demoNotice') | translate }}</p>
+  @if (hasSelectedArea()) {
+    <a class="fwi-explanation-link" href="#fwi-explanation-title">{{ 'infoPanel.learnFWI' | translate }}</a>
+  }
 
+  @if (hasSelectedArea() && !loading() && !assessmentError() && assessments().length > 0) {
+    <label class="subarea-selector" for="subarea-selection">{{ 'infoPanel.detail.select' | translate }}</label>
+    <select id="subarea-selection" (change)="selectSubarea($event)"
+      [value]="selectedKey()">
+      <option value="" [selected]="selectedKey() === ''">{{ 'infoPanel.summary.title' | translate }}</option>
+      @for (result of assessments(); track result.column + ':' + result.row) {
+        <option [value]="result.column + ':' + result.row" [selected]="selectedKey() === result.column + ':' + result.row">{{ result.column }} : {{ result.row }}</option>
+      }
+    </select>
+  }
+  @if (selectedAssessment(); as result) {
+    <section class="subarea-detail" aria-labelledby="subarea-detail-title" aria-live="polite">
+      <h3 id="subarea-detail-title">{{ 'infoPanel.detail.title' | translate }} {{ result.column }} : {{ result.row }}</h3>
+      @if (result.status === 'AVAILABLE' && result.fwi !== null && result.riskLevel !== null) {
+        <div class="result-reading">
+          <p class="fwi-reading"><strong>{{ result.fwi | number:'1.1-1' }}</strong><span>FWI</span></p>
+          <span class="danger-badge" [attr.data-risk]="result.riskLevel">{{ ('mapLegend.levels.' + riskLabels[result.riskLevel]) | translate }}</span>
+        </div>
+      } @else {
+        <p class="result-hint">{{ 'infoPanel.summary.unavailable' | translate }}</p>
+        <p class="result-hint">{{ result.unavailableReason }}</p>
+      }
+      <dl>
+        <div><dt>{{ 'infoPanel.summary.date' | translate }}</dt><dd>{{ result.date || ('infoPanel.summary.unavailable' | translate) }}</dd></div>
+        <div><dt>{{ 'infoPanel.summary.model' | translate }}</dt><dd>{{ result.model }}</dd></div>
+        <div><dt>{{ 'infoPanel.context.fwiSource' | translate }}</dt><dd>Open-Meteo</dd></div>
+        <div><dt>{{ 'infoPanel.detail.location' | translate }}</dt><dd>{{ result.sourceLongitude | number:'1.4-4' }}, {{ result.sourceLatitude | number:'1.4-4' }}</dd></div>
+        <div><dt>{{ 'infoPanel.detail.days' | translate }}</dt><dd>{{ result.calculationDays }}</dd></div>
+        @if (result.moistureState; as state) {
+          <div><dt>FFMC / DMC / DC</dt><dd>{{ state.ffmc | number:'1.1-1' }} / {{ state.dmc | number:'1.1-1' }} / {{ state.dc | number:'1.1-1' }}</dd></div>
+        }
+      </dl>
+    </section>
+  } @else {
   <section class="example-result" aria-labelledby="example-result-title">
     <h3 id="example-result-title" class="eyebrow">
       {{ (hasSelectedArea() ? 'infoPanel.summary.title' : 'infoPanel.result.title') | translate }}
@@ -31,7 +79,7 @@
           <div class="result-reading">
             <p class="fwi-reading"><strong>{{ maximum.fwi | number:'1.1-1' }}</strong><span>FWI</span></p>
             @if (maximum.riskLevel; as level) {
-              <span class="danger-badge">{{ ('mapLegend.levels.' + riskLabels[level]) | translate }}</span>
+              <span class="danger-badge" [attr.data-risk]="level">{{ ('mapLegend.levels.' + riskLabels[level]) | translate }}</span>
             }
           </div>
           <p class="result-hint">{{ 'infoPanel.summary.maximumHint' | translate }}</p>
@@ -64,7 +112,7 @@
     } @else {
       <div class="result-reading">
         <p class="fwi-reading"><strong>27.4</strong><span>FWI</span></p>
-        <span class="danger-badge">{{ 'infoPanel.result.high' | translate }}</span>
+        <span class="danger-badge" data-risk="HIGH">{{ 'infoPanel.result.high' | translate }}</span>
       </div>
       <p class="result-hint">{{ 'infoPanel.result.hint' | translate }}</p>
     }
@@ -132,6 +180,7 @@
       </dl>
     }
   </section>
+  }
 
   <div class="safety-section panel-section">
     <div class="safety-notice">

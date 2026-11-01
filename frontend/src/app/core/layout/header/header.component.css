@@ -128,6 +128,7 @@
   z-index: 1; /* above the pill */
   font-size: 0.8rem;
   padding: 0.4rem 0.6rem;
+  min-height: 44px;
   border: 0;
   border-radius: var(--radius-pill);
   background: transparent; /* the pill is the background */
@@ -135,6 +136,10 @@
   font-weight: var(--fontWeight-bold);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+.languageButton.selected {
+  color: var(--text-on-accent);
 }
 
 /* ---------- Burger button ---------- */

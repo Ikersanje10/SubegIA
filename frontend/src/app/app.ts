@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { HeaderComponent } from './core/layout/header/header.component';
 import { HomeComponent } from './features/home/home.component';
 import { FooterComponent } from './core/layout/footer/footer.component';
@@ -10,4 +10,5 @@ import { FooterComponent } from './core/layout/footer/footer.component';
   styleUrl: './app.css'
 })
 export class App {
+  readonly mapExpanded = signal(false);
 }

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, model } from '@angular/core';
 import { ExploreComponent } from './components/explore/explore.component';
 import { ProjectComponent } from './components/project/project.component';
 import { HowItWorksComponent } from './components/how-it-works/how-it-works.component';
@@ -10,4 +10,6 @@ import { LimitationsComponent } from './components/limitations/limitations.compo
   styleUrl: './home.component.css',
   templateUrl: './home.component.html',
 })
-export class HomeComponent { }
+export class HomeComponent {
+  readonly mapExpanded = model(false);
+}

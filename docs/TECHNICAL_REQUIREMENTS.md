@@ -1731,34 +1731,65 @@ Small, disposable technical experiments are allowed during preparation when need
 
 ## 9. Immediate next actions
 
-Updated 2026-10-31; earlier milestone/checkpoint text records historical progress,
+Updated 2026-11-01; earlier milestone/checkpoint text records historical progress,
 not the current active step.
 
 | Step | Current state | Next evidence needed |
 |---|---|---|
 | Geometry validation and source-grid partition | Implemented with targeted checks | Preserve coverage, no fabricated resolution and Polygon/MultiPolygon output |
-| AROME HD archive and daily weather preparation | Implemented; public samples and mapper tests checked | A successful live assessment request, broader coverage/freshness and quota behavior |
+| AROME HD archive and daily weather preparation | Implemented; samples/tests checked and user confirmed live assessment | Broader coverage/freshness and provider quota behavior |
 | Domain FWI and EFFIS classification | Implemented and numerically reference-checked | Maintain regression coverage; do not equate numerical agreement with local accuracy |
-| Per-cell response | Implemented; geometry-only mocked HTTP and GeoJSON serialization checked | Postman request with only `area`; confirm actual dates/results and experimental metadata |
-| Initialization and persistence | Backend-owned experimental 365-day reconstruction with 85/6/15 approved and implemented | Cache weather/persist updates; investigate local and seasonal initialization instead of requiring frontend states |
-| Angular integration | Pending | Connect selection to assessment; align singular/plural route; load response geometry and show real FWI/status/date |
-| Heatmap, results and guidance | Pending real-data integration | Replace example values, map/list selection parity, legend, partial/error states, source attribution and official guidance |
-| API resource protection | Pending; required before public exposure | Rate limiting/429, concurrency and upstream quota budgets, request/geometry complexity validation and production CORS; retain configured timeouts |
-| MVP completion and deployment | Pending | Reviewed ES/EU/EN content, accessibility/privacy/performance and feasible EUR 0 HTTPS hosting/service eligibility |
+| Per-cell response | Connected with typed runtime GeoJSON validation | Preserve actual dates, availability and experimental metadata in deployed checks |
+| Initialization and persistence | Experimental 365-day reconstruction with 85/6/15 and local caches implemented | Persist daily updates later; investigate local/seasonal initialization |
+| Angular integration | Implemented | Preserve geometry-only POST, loading/retry and actual result metadata |
+| Heatmap, results and guidance | Implemented with ES/EU/EN explanations | Broader browser/manual accessibility and deployed acceptance checks |
+| API resource protection | POST-only interval Bucket4j/429 and configurable CORS implemented | Global concurrency/upstream/geometry budgets and trusted proxies for the selected host; retain timeouts |
+| MVP completion and deployment | API/CORS configurable and CI implemented; hosting undecided | Choose hosting and verify HTTPS/privacy/quotas, measured resource limits and complete deployed flow |
 
 The endpoint is callable from Postman with only the `area` GeoJSON object;
 Angular does not provide states or source-cell identifiers. The backend
-returns initialization assumptions and experimental metadata. No successful
-live HTTP assessment was claimed by the mocked integration tests.
+returns initialization assumptions and experimental metadata. The user confirmed
+a successful live Angular assessment; mocked integration tests alone do not
+establish live-provider reliability or local scientific accuracy.
 
-Next implementation order: demonstrate the live geometry-only request,
-connect Angular and its real heatmap/details, then add reusable weather/state
-storage and resource protection before public deployment. Core access remains
+Next implementation order: select the hosting environment, finalize measured
+resource/proxy settings and verify the deployed flow. Persisted daily moisture
+states remain a separate improvement. Core access remains
 anonymous; rate limiting is not a requirement to add login/JWT. Determine
 numeric resource limits from measured workloads and actual upstream quotas,
 not invented thresholds or an unapproved polygon-size cap. Cache keys and
 persisted states must include model/source-cell/date and calculation/
 initialization provenance to avoid stale or mismatched reuse.
+
+### Stabilization evidence and remaining limits
+
+The successful-result Caffeine cache has maximum 2,000 entries and 48-hour
+write expiry; reuse additionally requires the actual requested weather date.
+Shared futures deduplicate work by source cell/calculation version/target date.
+A separate bounded `weatherRetry` cache temporarily reuses missing-data or
+yesterday-fallback results for at most one minute. Reads never extend the retry
+deadline; injected UTC clock tests cover expiry. Exceptions are not cached.
+Both result types retain the geometry of the current request, not a prior polygon.
+
+The keyboard polygon editor accepts at least three longitude/latitude pairs and
+replaces drafts only after complete validation. Expanded-map state propagates
+through Angular models to make background sections inert. Focus wraps in both
+directions; Escape closes conditions, cancels drawing or closes the map in that
+order. Header/editor AXE semantic regression checks run with frontend tests.
+Browser checks of the initial ES/EU/EN page and expanded/drawing states detected
+no AXE violations. Test-DOM contrast checks are excluded because layout/contrast
+cannot be measured there; real-browser checks include contrast and report
+incomplete cases. Full manual screen-reader and layout conformance is not proven.
+
+Hosting-test Docker files, measurement scripts/results and the hosting-only
+health endpoint were removed at the user's request. Concurrency/batching numbers
+were not approved and are not implemented; choose policy after the hosting
+decision, fresh workload measurements and quota review.
+
+Backend verification and frontend/config tests pass; production compilation
+passes with existing map/panel CSS warning-budget overruns and Cesium dependency
+optimization warnings. Budgets were not raised to conceal them. CI does not
+deploy, and no hosting account or service has been provisioned.
 
 Do not reopen the completed audience/product-brief decisions or require operational scientific validation before UX work. Existing agent inspection is optional reference work, not a dependency for the new implementation.
 

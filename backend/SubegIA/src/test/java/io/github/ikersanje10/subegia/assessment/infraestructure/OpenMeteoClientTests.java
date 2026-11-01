@@ -32,7 +32,7 @@ class OpenMeteoClientTests {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         OpenMeteoClient client = new OpenMeteoClient(
-                new RestClientConfig().openMeteoRestClient(builder), new ObjectMapper());
+                new RestClientConfig().openMeteoRestClient(builder, "https://historical-forecast-api.open-meteo.com"), new ObjectMapper());
         LocalDate before = LocalDate.now(ZoneOffset.UTC);
 
         server.expect(request -> {
@@ -70,7 +70,7 @@ class OpenMeteoClientTests {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         OpenMeteoClient client = new OpenMeteoClient(
-                new RestClientConfig().openMeteoRestClient(builder), new ObjectMapper());
+                new RestClientConfig().openMeteoRestClient(builder, "https://historical-forecast-api.open-meteo.com"), new ObjectMapper());
 
         server.expect(request -> {
             var params = UriComponentsBuilder.fromUri(request.getURI()).build().getQueryParams();
@@ -92,7 +92,7 @@ class OpenMeteoClientTests {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         OpenMeteoClient client = new OpenMeteoClient(
-                new RestClientConfig().openMeteoRestClient(builder), new ObjectMapper());
+                new RestClientConfig().openMeteoRestClient(builder, "https://historical-forecast-api.open-meteo.com"), new ObjectMapper());
         server.expect(request -> {}).andRespond(withSuccess("{", MediaType.APPLICATION_JSON));
 
         assertThrows(WeatherServiceException.class,

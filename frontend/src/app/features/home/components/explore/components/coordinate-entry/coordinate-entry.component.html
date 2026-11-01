@@ -1,0 +1,15 @@
+<details>
+  <summary>{{ 'mapControls.coordinates.title' | translate }}</summary>
+  <form (submit)="submit($event)">
+    <label for="drawing-coordinates">{{ 'mapControls.coordinates.label' | translate }}</label>
+    <p id="drawing-coordinates-help">{{ 'mapControls.coordinates.help' | translate }}</p>
+    <textarea id="drawing-coordinates" rows="5" spellcheck="false"
+      [value]="text()" (input)="updateText($event)"
+      aria-describedby="drawing-coordinates-help drawing-coordinates-error"
+      [attr.aria-invalid]="invalid()"></textarea>
+    <p id="drawing-coordinates-error" [attr.role]="invalid() ? 'alert' : null">
+      @if (invalid()) { {{ 'mapControls.coordinates.invalid' | translate }} }
+    </p>
+    <button type="submit">{{ 'mapControls.coordinates.apply' | translate }}</button>
+  </form>
+</details>

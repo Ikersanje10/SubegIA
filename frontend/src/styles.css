@@ -66,6 +66,12 @@ body:has(app-cesium-map .fullScreen) {
 
 .map-credits .cesium-widget-credits {
   position: static;
+  background: var(--bg-alternate);
+  color: var(--text-primary);
+}
+
+.map-credits .cesium-widget-credits a {
+  color: var(--text-primary);
 }
 
 .cesium-map .cesium-credit-lightbox-overlay {

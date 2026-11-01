@@ -138,3 +138,26 @@ h3 {
     font-size: 0.8125rem;
   }
 }
+:host .fwi-explanation {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  background: var(--surface-raised);
+}
+
+:host .fwi-explanation h3 {
+  color: var(--text-primary);
+}
+
+:host .fwi-explanation h3:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+:host .fwi-explanation p {
+  margin-top: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}

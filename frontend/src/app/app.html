@@ -1,5 +1,5 @@
-<app-header></app-header>
+<app-header [attr.inert]="mapExpanded() ? '' : null"></app-header>
 <main>
-  <app-home></app-home>
+  <app-home [(mapExpanded)]="mapExpanded"></app-home>
 </main>
-<app-footer></app-footer>
+<app-footer [attr.inert]="mapExpanded() ? '' : null"></app-footer>

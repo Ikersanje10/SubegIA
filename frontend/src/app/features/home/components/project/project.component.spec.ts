@@ -57,13 +57,11 @@ describe('ProjectComponent', () => {
     }
   });
 
-  it('replaces the source link with the current mockup status', async () => {
+  it('renders the current experimental assessment status', async () => {
     const fixture = TestBed.createComponent(ProjectComponent);
     await fixture.whenStable();
     const element: HTMLElement = fixture.nativeElement;
     expect(element.querySelector('a')).toBeNull();
-    expect(element.querySelector('.status-notice')?.textContent).toBe(
-      'Estado actual: maqueta con terreno real y valores ficticios. El MVP y sus calculos todavia no estan implementados. Colores y textos son propuestas de diseno.',
-    );
+    expect(element.querySelector('.status-notice')?.textContent).toBe(es.project.statusNotice);
   });
 });

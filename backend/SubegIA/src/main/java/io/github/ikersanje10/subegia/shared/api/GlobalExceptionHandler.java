@@ -5,9 +5,6 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
-import io.github.ikersanje10.subegia.assessment.domain.exception.AreaOutsideCoverageException;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

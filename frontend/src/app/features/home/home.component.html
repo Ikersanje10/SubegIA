@@ -1,4 +1,4 @@
-<app-explore></app-explore>
-<app-project></app-project>
-<app-how-it-works></app-how-it-works>
-<app-limitations></app-limitations>
+<app-explore [(mapExpanded)]="mapExpanded"></app-explore>
+<app-project [attr.inert]="mapExpanded() ? '' : null"></app-project>
+<app-how-it-works [attr.inert]="mapExpanded() ? '' : null"></app-how-it-works>
+<app-limitations [attr.inert]="mapExpanded() ? '' : null"></app-limitations>

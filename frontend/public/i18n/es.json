@@ -14,12 +14,19 @@
             "finish": "Finalizar",
             "cancel": "Cancelar",
             "instructions": "Esquinas: {{count}}. Selecciona al menos 3 puntos siguiendo el contorno, en orden y sin cruzar los lados. Puedes deshacer, finalizar o cancelar.",
-            "notice": "Solo se admiten puntos dentro de Gipuzkoa y contornos sin cruces. Aún no se comprueba que los lados y toda la superficie estén dentro de Gipuzkoa.",
+            "notice": "Solo se admiten puntos dentro de Gipuzkoa y contornos sin cruces. Antes de calcular, el backend comprueba que los lados y toda la superficie estén dentro de Gipuzkoa.",
             "invalidOutline": "Ese contorno tiene cruces, lados solapados o no forma una superficie. Selecciona las esquinas siguiendo el borde, sin cruzar los lados.",
             "outsideCoverage": "De momento, solo puedes seleccionar puntos dentro de Gipuzkoa.",
             "coverageUnavailable": "No se puede comprobar la zona permitida. Vuelve a cargar la página.",
             "selectTerrain": "Selecciona un punto sobre el terreno.",
             "distinctPoint": "Selecciona un punto distinto de los anteriores."
+        },
+        "coordinates": {
+            "title": "Introducir o editar esquinas con el teclado",
+            "label": "Coordenadas de las esquinas",
+            "help": "Una esquina por línea: longitud, latitud, con punto decimal. Introduce al menos tres esquinas en orden. No repitas la primera al final. Aplicar sustituye las esquinas del borrador; Finalizar solicita la evaluación.",
+            "invalid": "Introduce al menos tres líneas con dos números válidos separados por una coma: longitud, latitud.",
+            "apply": "Aplicar esquinas"
         }
     },
     "mapLoading": {
@@ -29,6 +36,9 @@
         "reload": "Volver a cargar la página"
     },
     "mapLegend": {
+        "actualTitle": "Categorías FWI / EFFIS",
+        "actualNotice": "Umbrales del índice FWI, no probabilidades de incendio. La geometría recortada no aumenta la resolución del modelo.",
+        "unavailable": "Sin datos disponibles",
         "title": "FWI de ejemplo",
         "lower": "Menor peligro",
         "higher": "Mayor peligro",
@@ -47,6 +57,24 @@
         "hide": "Ocultar condiciones"
     },
     "infoPanel": {
+        "learnFWI": "Qué significa el FWI y cómo lo calculamos",
+        "retry": "Reintentar evaluación",
+        "retryAfter": "Puedes volver a solicitar una evaluación en {{seconds}} segundos.",
+        "slow": "La primera consulta puede tardar alrededor de un minuto si el servidor gratuito está despertando. Las áreas grandes también pueden necesitar más tiempo.",
+        "errors": {
+            "rateLimited": "Has alcanzado el límite de peticiones. Espera antes de volver a solicitar una evaluación.",
+            "busy": "El servidor está ocupado procesando otras evaluaciones. Inténtalo de nuevo más tarde.",
+            "invalidArea": "El área enviada no es válida o no está completamente dentro de Gipuzkoa. Revisa y vuelve a dibujar la selección.",
+            "weather": "No se ha podido obtener la meteorología del proveedor. Puedes reintentar conservando el área.",
+            "network": "No se ha podido conectar con el backend. Comprueba tu conexión; el servidor también podría estar despertando."
+        },
+        "empty": "El backend no ha devuelto subáreas. No hay resultados que mostrar; esto es distinto de recibir celdas sin datos.",
+        "detail": {
+            "select": "Ver resumen o seleccionar una subárea",
+            "title": "Subárea",
+            "location": "Fuente: longitud, latitud",
+            "days": "Días de cálculo"
+        },
         "summary": {
             "title": "Resumen del área",
             "maximum": "FWI máximo entre las subáreas disponibles",
@@ -64,18 +92,18 @@
             "eyebrow": "Evaluación experimental",
             "title": "Área seleccionada",
             "introduction": "El backend calcula el FWI diario por subárea a partir de datos meteorológicos.",
-            "notice": "Calculamos el índice FWI con su método establecido, no con valores ficticios. Los datos del modelo y la inicialización son estimaciones: no hemos validado la precisión local y esto no es un aviso oficial.",
+            "notice": "FWI calculado con datos meteorológicos e inicialización experimental. Precisión local no validada; no es un aviso oficial.",
             "resultTitle": "FWI por subárea",
-            "resultHint": "La respuesta del backend se ha recibido. La visualización de los valores y detalles por subárea todavía está pendiente.",
+            "resultHint": "Los resultados y detalles de cada subárea se muestran en el mapa y el panel.",
             "source": "Open-Meteo / AROME HD",
             "providers": "Requiere internet y WebGL. El visor y la meteorología utilizan servicios externos. El FWI describe condiciones meteorológicas favorables a la intensidad y propagación del fuego; no es una probabilidad de ignición ni una evaluación completa del riesgo."
         },
         "loading": "Calculando el FWI del área seleccionada…",
-        "assessmentError": "No se ha podido calcular el FWI. Vuelve a dibujar el área para intentarlo de nuevo.",
+        "assessmentError": "No se ha podido completar la evaluación o interpretar su respuesta. Puedes reintentar conservando el área.",
         "eyebrow": "Diseño con mapa real",
         "title": "Área de ejemplo",
         "introduction": "La interfaz rodea a Cesium, no sustituye su terreno por una ilustración.",
-        "demoNotice": "FWI y celdas de ejemplo ficticios. Dibujar no calcula resultados. El relieve y las imágenes se cargan de servicios externos reales.",
+        "demoNotice": "Esta vista inicial contiene valores de ejemplo ficticios. Dibuja y finaliza un área para solicitar un cálculo real experimental. El relieve y las imágenes proceden de servicios externos.",
         "result": {
             "title": "Celda C2 / dato ilustrativo",
             "high": "Alto",
@@ -90,7 +118,7 @@
             "fwiSource": "Fuente del FWI",
             "fwiSourceValue": "Ninguna / valores ficticios",
             "drawing": "Dibujo móvil",
-            "drawingValue": "Puntos dentro de Gipuzkoa y contornos sin cruces; cobertura completa pendiente"
+            "drawingValue": "Selección por mapa o coordenadas; el backend valida la geometría y la cobertura completa"
         },
         "design": {
             "title": "Para tu diseño en Figma",
@@ -112,7 +140,7 @@
             "explore": {
                 "label": "01 / Explorar",
                 "title": "El territorio, en tres dimensiones",
-                "description": "CesiumJS muestra relieve real, montañas y valles. El MVP permitirá dibujar un área y explorar resultados por subáreas según la información disponible."
+                "description": "CesiumJS muestra relieve real, montañas y valles. Puedes dibujar un área y explorar resultados por subáreas según la información disponible."
             },
             "understand": {
                 "label": "02 / Entender",
@@ -125,27 +153,35 @@
                 "description": "Angular, Spring Boot y visualización geoespacial forman la primera etapa. Microservicios y Spring AI se incorporarán más adelante como objetivos de aprendizaje."
             }
         },
-        "statusNotice": "Estado actual: maqueta con terreno real y valores ficticios. El MVP y sus calculos todavia no estan implementados. Colores y textos son propuestas de diseno."
+        "statusNotice": "Estado actual: cálculo experimental de FWI conectado al mapa, con resultados por subárea y sus detalles. La vista inicial es un ejemplo. La precisión local no está validada."
     },
     "howItWorks": {
-        "eyebrow": "Cómo funcionará el MVP",
+        "science": {
+            "title": "Qué es el FWI y cómo lo calculamos",
+            "meaning": "El Canadian Fire Weather Index (FWI) es un índice sin unidades que resume condiciones meteorológicas relacionadas con la intensidad potencial del fuego. No es una probabilidad de ignición ni una predicción del recorrido de un incendio. No incluye por sí solo todos los combustibles, el relieve, las personas o las construcciones expuestas.",
+            "inputs": "Usamos datos horarios del modelo AROME HD obtenidos mediante la API Historical Forecast de Open-Meteo: temperatura, humedad relativa y viento a 10 m a las 11:00 UTC (mediodía de la hora estándar CET), y la lluvia de las 24 horas anteriores. Son estimaciones de un modelo, no mediciones de cada parcela.",
+            "method": "Cada día actualizamos FFMC (humedad del combustible fino), DMC (materia orgánica de profundidad intermedia) y DC (capas profundas). Con estos códigos calculamos ISI (propagación inicial), BUI (combustible disponible) y finalmente FWI. Los estados de humedad pasan al día siguiente; no se calcula cada día desde cero.",
+            "initialization": "Para este prototipo reconstruimos 365 días con estados iniciales FFMC 85, DMC 6 y DC 15. Son supuestos experimentales, no estados medidos en Gipuzkoa. El historial reduce la dependencia del punto de partida, pero no demuestra precisión local. Los huecos de datos producen subáreas sin resultado, no ceros.",
+            "reading": "Mostramos el último día completo disponible, que puede ser anterior a hoy. Las categorías usan los umbrales de EFFIS. El mapa respeta las celdas del modelo recortadas por la selección; el detalle del terreno 3D no implica detalle meteorológico equivalente. Sigue siempre las restricciones y avisos oficiales."
+        },
+        "eyebrow": "Cómo funciona",
         "title": "De los datos meteorológicos a una lectura visual.",
-        "introduction": "La interfaz se mantendrá sencilla. La aplicación documentará qué datos utiliza y cómo llega al resultado, sin delegar el cálculo científico a un modelo de lenguaje.",
+        "introduction": "La aplicación explica qué datos utiliza y cómo llega al resultado, sin delegar el cálculo científico a un modelo de lenguaje.",
         "steps": {
             "select": {
                 "label": "Paso 01",
                 "title": "Seleccionar un área",
-                "description": "El usuario dibujará un polígono dentro de Gipuzkoa. La selección se relacionará con las celdas o fuentes meteorológicas que realmente puedan representarla."
+                "description": "Dibuja un polígono dentro de Gipuzkoa. El backend valida la cobertura y lo relaciona con las celdas meteorológicas de AROME HD."
             },
             "calculate": {
                 "label": "Paso 02",
                 "title": "Calcular el FWI",
-                "description": "Spring Boot utilizará temperatura, humedad relativa del aire, viento, precipitación e historial de estados de humedad. Open-Meteo es la fuente elegida para el prototipo."
+                "description": "Spring Boot utiliza temperatura, humedad relativa, viento, precipitación e historial de estados de humedad de Open-Meteo para calcular el FWI diario."
             },
             "explore": {
                 "label": "Paso 03",
                 "title": "Explorar y comprender",
-                "description": "Un mapa de categorías y un panel mostrarán los resultados, las fechas y la información no disponible. La orientación preventiva general enlazará a fuentes oficiales."
+                "description": "El mapa y el panel muestran resultados, fechas y zonas sin datos. Selecciona una subárea para consultar sus detalles. La orientación no sustituye los avisos oficiales."
             }
         },
         "sourceLink": "Consultar la explicación del FWI en EFFIS",

@@ -14,12 +14,19 @@
             "finish": "Amaitu",
             "cancel": "Utzi",
             "instructions": "Erpinak: {{count}}. Hautatu gutxienez 3 puntu inguruneari jarraituz, ordenan eta ertzak gurutzatu gabe. Desegin, amaitu edo bertan behera utz dezakezu.",
-            "notice": "Gipuzkoa barruko puntuak eta gurutzaketarik gabeko inguruak soilik onartzen dira. Oraindik ez da egiaztatzen ertzak eta azalera osoa Gipuzkoa barruan daudenik.",
+            "notice": "Gipuzkoa barruko puntuak eta gurutzaketarik gabeko inguruak soilik onartzen dira. Kalkulatu aurretik, backendak ertzak eta azalera osoa Gipuzkoa barruan daudela egiaztatzen du.",
             "invalidOutline": "Inguru horrek gurutzaketak edo gainjarritako ertzak ditu, edo ez du azalerarik osatzen. Hautatu erpinak mugari jarraituz, ertzak gurutzatu gabe.",
             "outsideCoverage": "Oraingoz, Gipuzkoa barruko puntuak bakarrik hauta ditzakezu.",
             "coverageUnavailable": "Ezin da baimendutako eremua egiaztatu. Kargatu orria berriro.",
             "selectTerrain": "Hautatu puntu bat lurrean.",
             "distinctPoint": "Hautatu aurrekoez bestelako puntu bat."
+        },
+        "coordinates": {
+            "title": "Sartu edo editatu erpinak teklatuarekin",
+            "label": "Erpinen koordenatuak",
+            "help": "Erpin bat lerro bakoitzean: longitudea, latitudea, puntu hamartarra erabiliz. Sartu gutxienez hiru erpin ordenan. Ez errepikatu lehena amaieran. Aplikatzeak zirriborroko erpinak ordezkatzen ditu; Amaitu aukerak ebaluazioa eskatzen du.",
+            "invalid": "Sartu gutxienez hiru lerro, komaz bereizitako bi zenbaki baliodunekin: longitudea, latitudea.",
+            "apply": "Aplikatu erpinak"
         }
     },
     "mapLoading": {
@@ -29,6 +36,9 @@
         "reload": "Kargatu orria berriro"
     },
     "mapLegend": {
+        "actualTitle": "FWI kategoriak / EFFIS",
+        "actualNotice": "FWI atalaseak, ez sute-probabilitateak. Geometria mozteak ez du ereduaren bereizmena handitzen.",
+        "unavailable": "Daturik ez",
         "title": "Adibideko FWIa",
         "lower": "Arrisku txikiagoa",
         "higher": "Arrisku handiagoa",
@@ -47,6 +57,24 @@
         "hide": "Ezkutatu baldintzak"
     },
     "infoPanel": {
+        "learnFWI": "Zer da FWIa eta nola kalkulatzen dugu",
+        "retry": "Ebaluazioa berriro saiatu",
+        "retryAfter": "{{seconds}} segundo barru beste ebaluazio bat eska dezakezu.",
+        "slow": "Lehen eskaerak minutu bat inguru iraun dezake doako zerbitzaria esnatzen ari bada. Eremu handiek ere denbora gehiago behar dezakete.",
+        "errors": {
+            "rateLimited": "Eskaeren mugara iritsi zara. Itxaron beste ebaluazio bat eskatu aurretik.",
+            "busy": "Zerbitzaria beste ebaluazio batzuk prozesatzen ari da. Saiatu berriro geroago.",
+            "invalidArea": "Bidalitako eremua ez da baliozkoa edo ez dago guztiz Gipuzkoa barruan. Berrikusi eta marraztu berriro hautaketa.",
+            "weather": "Ezin izan dira hornitzailearen datu meteorologikoak eskuratu. Saiatu berriro eremua berriz marraztu gabe.",
+            "network": "Ezin izan da backendarekin konektatu. Egiaztatu konexioa; zerbitzaria esnatzen ari da agian."
+        },
+        "empty": "Backendak ez du azpieremurik itzuli. Ez dago emaitzarik; hau ez da daturik gabeko gelaxkak jasotzea.",
+        "detail": {
+            "select": "Laburpena ikusi edo azpieremu bat hautatu",
+            "title": "Azpieremua",
+            "location": "Iturria: longitudea, latitudea",
+            "days": "Kalkulu-egunak"
+        },
         "summary": {
             "title": "Eremuaren laburpena",
             "maximum": "FWI maximoa datuak dituzten azpieremuen artean",
@@ -64,18 +92,18 @@
             "eyebrow": "Ebaluazio esperimentala",
             "title": "Hautatutako eremua",
             "introduction": "Backendak eguneko FWIa kalkulatzen du azpieremu bakoitzerako, datu meteorologikoekin.",
-            "notice": "FWIa ezarritako metodoarekin kalkulatzen dugu, ez fikziozko balioekin. Ereduaren datuak eta hasieratzea estimazioak dira: tokiko zehaztasuna ez dago baliozkotuta eta hau ez da abisu ofiziala.",
+            "notice": "FWIa datu meteorologikoekin eta hasieratze esperimentalarekin kalkulatuta. Tokiko zehaztasuna ez dago baliozkotuta; hau ez da abisu ofiziala.",
             "resultTitle": "FWIa azpieremu bakoitzeko",
-            "resultHint": "Backendaren erantzuna jaso da. Azpieremuen balioak eta xehetasunak bistaratzea egiteke dago.",
+            "resultHint": "Azpieremu bakoitzaren emaitzak eta xehetasunak mapan eta panelean erakusten dira.",
             "source": "Open-Meteo / AROME HD",
             "providers": "Internet eta WebGL behar ditu. Bisoreak eta datu meteorologikoek kanpoko zerbitzuak erabiltzen dituzte. FWIak suaren intentsitatea eta hedapena errazten duten baldintza meteorologikoak deskribatzen ditu; ez da pizte-probabilitate bat edo arrisku-ebaluazio osoa."
         },
         "loading": "Hautatutako eremuaren FWIa kalkulatzen…",
-        "assessmentError": "Ezin izan da FWIa kalkulatu. Marraztu eremua berriro beste saiakera bat egiteko.",
+        "assessmentError": "Ezin izan da ebaluazioa osatu edo erantzuna interpretatu. Saiatu berriro eremua berriz marraztu gabe.",
         "eyebrow": "Benetako maparekin diseinatua",
         "title": "Adibideko eremua",
         "introduction": "Interfazeak Cesium inguratzen du, ez du haren erliebea ilustrazio batekin ordezkatzen.",
-        "demoNotice": "Adibideko FWI balioak eta gelaxkak fikziozkoak dira. Marrazteak ez du emaitzarik kalkulatzen. Erliebea eta irudiak benetako kanpoko zerbitzuetatik kargatzen dira.",
+        "demoNotice": "Hasierako ikuspegiko balioak fikziozko adibideak dira. Marraztu eta amaitu eremu bat benetako kalkulu esperimentala eskatzeko. Erliebea eta irudiak kanpoko zerbitzuetatik datoz.",
         "result": {
             "title": "C2 gelaxka / datu adierazgarria",
             "high": "Altua",
@@ -90,7 +118,7 @@
             "fwiSource": "FWIaren iturria",
             "fwiSourceValue": "Bat ere ez / fikziozko balioak",
             "drawing": "Mugikorreko marrazketa",
-            "drawingValue": "Puntuak Gipuzkoa barruan eta gurutzaketarik gabeko inguruak; estaldura osoaren baliozkotzea egiteke"
+            "drawingValue": "Hautaketa mapan edo koordenatuekin; backendak geometria eta estaldura osoa baliozkotzen ditu"
         },
         "design": {
             "title": "Zure Figma diseinurako",
@@ -112,7 +140,7 @@
             "explore": {
                 "label": "01 / Arakatu",
                 "title": "Lurraldea, hiru dimentsiotan",
-                "description": "CesiumJS-ek benetako erliebea, mendiak eta haranak erakusten ditu. MVPak eremu bat marrazteko eta azpieremuen emaitzak arakatzeko aukera emango du, eskuragarri dagoen informazioaren arabera."
+                "description": "CesiumJS-ek benetako erliebea, mendiak eta haranak erakusten ditu. Eremu bat marraztu eta azpieremuen emaitzak arakatu ditzakezu, eskuragarri dagoen informazioaren arabera."
             },
             "understand": {
                 "label": "02 / Ulertu",
@@ -125,27 +153,35 @@
                 "description": "Angular, Spring Boot eta bistaratze geoespaziala dira lehen etapa. Mikrozerbitzuak eta Spring AI aurrerago gehituko dira ikaskuntza-helburu gisa."
             }
         },
-        "statusNotice": "Egungo egoera: benetako erliebea eta fikziozko balioak dituen maketa. MVPa eta haren kalkuluak oraindik ez daude inplementatuta. Koloreak eta testuak diseinu-proposamenak dira."
+        "statusNotice": "Egungo egoera: FWI kalkulu esperimentalak mapara konektatuta, azpieremuen emaitzekin eta xehetasunekin. Hasierako ikuspegia adibidea da. Tokiko zehaztasuna ez dago baliozkotuta."
     },
     "howItWorks": {
-        "eyebrow": "Nola funtzionatuko du MVPak",
+        "science": {
+            "title": "Zer da FWIa eta nola kalkulatzen dugu",
+            "meaning": "Canadian Fire Weather Index (FWI) unitaterik gabeko indizea da, suaren intentsitate potentzialarekin lotutako baldintza meteorologikoak laburbiltzen dituena. Ez da pizte-probabilitatea edo suaren ibilbidearen iragarpena, eta ez ditu erregai, erliebe, pertsona edo eraikin guztiak kontuan hartzen.",
+            "inputs": "Open-Meteoren Historical Forecast APIko AROME HD ereduaren orduko datuak erabiltzen ditugu: tenperatura, hezetasun erlatiboa eta 10 metroko haizea 11:00 UTCn (CET ordu estandarreko eguerdia), eta aurreko 24 orduetako euria. Ereduaren estimazioak dira, ez lursail bakoitzeko neurketak.",
+            "method": "Egunero FFMC (erregai finaren hezetasuna), DMC (tarteko sakonerako materia organikoa) eta DC (geruza sakonak) eguneratzen ditugu. Kode horiekin ISI (hasierako hedapena), BUI (erregai erabilgarria) eta FWIa kalkulatzen ditugu. Hezetasun-egoerak hurrengo egunera pasatzen dira.",
+            "initialization": "Prototipoak 365 egun berreraikitzen ditu FFMC 85, DMC 6 eta DC 15 hasierako balioetatik. Suposizio esperimentalak dira, ez Gipuzkoan neurtutako egoerak. Historiak abiapuntuaren eragina murrizten du, baina ez du tokiko zehaztasuna frogatzen. Datu-hutsuneek emaitzarik gabeko azpieremuak sortzen dituzte, ez zeroak.",
+            "reading": "Eskuragarri dagoen azken egun osoa erakusten dugu; gaur baino lehenagokoa izan daiteke. Atalaseak EFFISekoak dira. Ereduaren gelaxkak hautaketara mozten dira; 3D erliebearen xehetasunak ez dakar eguraldiaren xehetasun bera. Jarraitu beti murrizketa eta abisu ofizialak."
+        },
+        "eyebrow": "Nola funtzionatzen du",
         "title": "Datu meteorologikoetatik irakurketa bisualera.",
-        "introduction": "Interfazea sinplea izango da. Aplikazioak zer datu erabiltzen dituen eta emaitzara nola iristen den dokumentatuko du, kalkulu zientifikoa hizkuntza-eredu baten esku utzi gabe.",
+        "introduction": "Aplikazioak zer datu erabiltzen dituen eta emaitzara nola iristen den azaltzen du, kalkulu zientifikoa hizkuntza-eredu baten esku utzi gabe.",
         "steps": {
             "select": {
                 "label": "01 urratsa",
                 "title": "Eremu bat hautatu",
-                "description": "Erabiltzaileak poligono bat marraztuko du Gipuzkoa barruan. Hautaketa benetan ordezka dezaketen gelaxka edo iturri meteorologikoekin lotuko da."
+                "description": "Marraztu poligono bat Gipuzkoa barruan. Backendak estaldura baliozkotzen du eta AROME HD gelaxka meteorologikoekin lotzen du."
             },
             "calculate": {
                 "label": "02 urratsa",
                 "title": "FWIa kalkulatu",
-                "description": "Spring Boot-ek tenperatura, airearen hezetasun erlatiboa, haizea, prezipitazioa eta hezetasun-egoeren historia erabiliko ditu. Open-Meteo da prototiporako aukeratutako iturria."
+                "description": "Spring Boot-ek Open-Meteoren tenperatura, hezetasun erlatiboa, haizea, prezipitazioa eta hezetasun-egoeren historia erabiltzen ditu eguneko FWIa kalkulatzeko."
             },
             "explore": {
                 "label": "03 urratsa",
                 "title": "Arakatu eta ulertu",
-                "description": "Kategorien mapa batek eta panel batek emaitzak, datak eta eskuragarri ez dagoen informazioa erakutsiko dituzte. Prebentzio-orientazio orokorrak iturri ofizialetara lotuko du."
+                "description": "Mapak eta panelak emaitzak, datak eta daturik gabeko eremuak erakusten dituzte. Hautatu azpieremu bat xehetasunak ikusteko. Informazioak ez ditu abisu ofizialak ordezkatzen."
             }
         },
         "sourceLink": "Irakurri FWIaren azalpena EFFISen",

@@ -1,10 +1,17 @@
 <section id="explore">
-  <app-cesium-map #map>
+  <app-cesium-map #map [(interactive)]="mapExpanded">
     <app-info-panel
       [loading]="map.assessmentLoading()"
       [hasSelectedArea]="map.hasSelectedArea()"
       [assessmentError]="map.assessmentError()"
+      [assessmentErrorKey]="map.assessmentErrorKey()"
+      [retrySeconds]="map.retrySeconds()"
+      [assessmentSlow]="map.assessmentSlow()"
+      [assessmentEmpty]="map.assessmentEmpty()"
+      (retryRequested)="map.retryAssessment()"
       [assessments]="map.assessments()"
+      [selectedAssessment]="map.selectedAssessment()"
+      (assessmentSelected)="map.selectAssessment($event)"
     ></app-info-panel>
   </app-cesium-map>
 </section>
