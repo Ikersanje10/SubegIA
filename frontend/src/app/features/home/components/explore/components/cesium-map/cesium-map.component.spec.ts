@@ -1,6 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideTranslateService, TranslateService } from '@ngx-translate/core';
 import { vi } from 'vitest';
+import { of, Subject } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { AssessmentService } from '../../../../../../api/assessment.service';
+import type { AssessmentRequest, SubAreaAssessment } from '../../../../../../api/Assessment';
 import * as Cesium from 'cesium';
 import type { MultiPolygon } from 'geojson';
 import { CesiumMapComponent } from './cesium-map.component';
@@ -19,13 +23,18 @@ describe('CesiumMapComponent', () => {
   const initializeMap = CesiumMapComponent.prototype['initMap'];
   let component: CesiumMapComponent;
   let fixture: ComponentFixture<CesiumMapComponent>;
+  const calculateFWI = vi.fn((_request: AssessmentRequest) => of<never[]>([]));
 
   beforeEach(async () => {
+    calculateFWI.mockReset().mockReturnValue(of([]));
     vi.stubGlobal('innerWidth', 799);
     CesiumMapComponent.prototype['initMap'] = async () => undefined;
     await TestBed.configureTestingModule({
       imports: [CesiumMapComponent],
-      providers: [provideTranslateService({ lang: 'es' })],
+      providers: [
+        provideTranslateService({ lang: 'es' }),
+        { provide: AssessmentService, useValue: { calculateFWI } },
+      ],
     }).compileComponents();
 
     TestBed.inject(TranslateService).setTranslation('es', es);
@@ -856,7 +865,7 @@ describe('CesiumMapComponent', () => {
       component['addDrawingPoint'](positions[2]);
       requestRender.mockClear();
       component.finishDrawing();
-      expect(requestRender).toHaveBeenCalledOnce();
+      expect(requestRender).toHaveBeenCalledTimes(3);
       expect(component['drawingSource']?.entities.getById('drawn-area')).toBeDefined();
 
       component.drawArea();
@@ -1129,7 +1138,7 @@ describe('CesiumMapComponent', () => {
         Cesium.HeightReference.CLAMP_TO_GROUND,
       );
       expect(source.entities.values).toEqual([area]);
-      expect(exampleArea.show).toBe(true);
+      expect(exampleArea.show).toBe(false);
 
       component.drawArea();
       addPoints(4);
@@ -1143,6 +1152,208 @@ describe('CesiumMapComponent', () => {
       expect(source.entities.values).toHaveLength(1);
       expect(source.entities.getById('drawn-area')!.polygon!.hierarchy!.getValue(time).positions)
         .toEqual(positions);
+    });
+
+    it('keeps loading until completion and prevents overlapping assessments', async () => {
+      const response = new Subject<never[]>();
+      calculateFWI.mockReturnValue(response);
+      component.drawArea();
+      addPoints(3);
+      component.finishDrawing();
+      await fixture.whenStable();
+
+      expect(component.assessmentLoading()).toBe(true);
+      expect(component.assessmentError()).toBe(false);
+      expect(component.conditionsOpen()).toBe(true);
+      expect(button(es.mapControls.draw).getAttribute('aria-disabled')).toBe('true');
+      expect(source.entities.getById('drawn-area')).toBeDefined();
+      expect(calculateFWI).toHaveBeenCalledOnce();
+      const request = calculateFWI.mock.calls[0][0];
+      expect(request.area.coordinates[0]).toHaveLength(4);
+      expect(request.area.coordinates[0][0]).toEqual(request.area.coordinates[0][3]);
+
+      component.drawArea();
+      component.finishDrawing();
+      expect(component.drawing()).toBe(false);
+      expect(calculateFWI).toHaveBeenCalledOnce();
+      response.next([]);
+      expect(component.assessmentLoading()).toBe(true);
+      response.complete();
+      expect(component.assessmentLoading()).toBe(false);
+    });
+
+    it('stops loading on HTTP error and clears that error for a new attempt', () => {
+      const response = new Subject<never[]>();
+      calculateFWI.mockReturnValue(response);
+      component.drawArea();
+      addPoints(3);
+      component.finishDrawing();
+      const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      try {
+        const error = new HttpErrorResponse({ status: 422 });
+        response.error(error);
+        expect(component.assessmentLoading()).toBe(false);
+        expect(component.assessmentError()).toBe(true);
+        expect(log).toHaveBeenCalledWith('Could not calculate FWI', error);
+
+        calculateFWI.mockReturnValue(new Subject<never[]>());
+        component.drawArea();
+        addPoints(3);
+        component.finishDrawing();
+        expect(component.assessmentError()).toBe(false);
+        expect(component.assessmentLoading()).toBe(true);
+      } finally {
+        log.mockRestore();
+      }
+    });
+
+    it('unsubscribes and clears loading when the component is destroyed', () => {
+      const response = new Subject<never[]>();
+      calculateFWI.mockReturnValue(response);
+      component.drawArea();
+      addPoints(3);
+      component.finishDrawing();
+      expect(response.observed).toBe(true);
+      fixture.destroy();
+      expect(response.observed).toBe(false);
+      expect(component.assessmentLoading()).toBe(false);
+    });
+
+    it('pulses the existing polygon and restores a static neutral material on completion', () => {
+      const response = new Subject<never[]>();
+      calculateFWI.mockReturnValue(response);
+      const clock = vi.spyOn(performance, 'now').mockReturnValue(0);
+      try {
+        component.drawArea();
+        addPoints(3);
+        component.finishDrawing();
+        const area = source.entities.getById('drawn-area')!;
+        const material = area.polygon!.material!;
+        const time = Cesium.JulianDate.now();
+        expect(material.isConstant).toBe(false);
+        expect(material.getValue(time).color.alpha).toBeCloseTo(0.35);
+        clock.mockReturnValue(500);
+        expect(material.getValue(time).color.alpha).toBeCloseTo(0.5);
+        expect(component['assessmentAnimationFrame']).toBeDefined();
+
+        response.complete();
+        expect(source.entities.getById('drawn-area')).toBe(area);
+        expect(area.polygon!.material!.isConstant).toBe(true);
+        expect(area.polygon!.material!.getValue(time).color.alpha).toBe(0.25);
+        expect(component['assessmentAnimationFrame']).toBeUndefined();
+      } finally {
+        clock.mockRestore();
+      }
+    });
+
+    it('hides the example and its controls after submission while keeping the legend visible', async () => {
+      component.toggleHeatMap();
+      component.drawArea();
+      addPoints(3);
+      component.finishDrawing();
+      await fixture.whenStable();
+      const element: HTMLElement = fixture.nativeElement;
+      expect(exampleArea.show).toBe(false);
+      expect(element.querySelector('.mapExampleControls')?.classList.contains('hidden')).toBe(true);
+      expect(element.querySelector('.fwi-legend')?.classList.contains('hidden')).toBe(false);
+      component.toggleHeatMap();
+      expect(exampleArea.show).toBe(false);
+      component.drawArea();
+      component.cancelDrawing();
+      await fixture.whenStable();
+      expect(exampleArea.show).toBe(false);
+      expect(element.querySelector('.fwi-legend')?.classList.contains('hidden')).toBe(false);
+    });
+
+    it('temporarily hides the previous selection while drawing and restores it on cancel', () => {
+      component.drawArea();
+      addPoints(3);
+      component.finishDrawing();
+      const selectedArea = source.entities.getById('drawn-area')!;
+      expect(selectedArea.show).toBe(true);
+      component.drawArea();
+      expect(selectedArea.show).toBe(false);
+      expect(source.entities.getById('drawn-area')).toBe(selectedArea);
+      addPoints(2);
+      component.cancelDrawing();
+      expect(selectedArea.show).toBe(true);
+      expect(source.entities.getById('drawn-area')).toBe(selectedArea);
+    });
+
+    it('loads real GeoJSON subareas with risk colors and preserves their metadata', async () => {
+      const dataSources = new Cesium.DataSourceCollection();
+      const viewer = {
+        dataSources,
+        scene: { requestRender: vi.fn() },
+        isDestroyed: () => false,
+        destroy: vi.fn(),
+      };
+      Object.defineProperty(component, 'viewer', { value: viewer, writable: true });
+      const base: SubAreaAssessment = {
+        column: 0, row: 0,
+        geometry: { type: 'Polygon', coordinates: [[[-2.5, 43.1], [-2.49, 43.1], [-2.49, 43.11], [-2.5, 43.1]]] },
+        fwi: 2, riskLevel: 'LOW', date: '2026-11-01', status: 'AVAILABLE',
+        unavailableReason: null, moistureState: null, model: 'meteofrance_arome_france_hd',
+        sourceLongitude: -2.5, sourceLatitude: 43.1, experimental: true,
+        initialState: { date: '2025-11-01', ffmc: 85, dmc: 6, dc: 15 },
+        calculationDays: 365,
+      };
+      if (base.geometry.type !== 'Polygon') throw new Error('Expected polygon fixture');
+      const unavailable: SubAreaAssessment = {
+        ...base, column: 1, status: 'UNAVAILABLE', riskLevel: null, fwi: null,
+        unavailableReason: 'Missing weather',
+        geometry: { type: 'MultiPolygon', coordinates: [base.geometry.coordinates, base.geometry.coordinates] },
+      };
+      await component['loadAssessmentResults']([base, unavailable]);
+      const layer = component['assessmentSource']!;
+      expect(dataSources.contains(layer)).toBe(true);
+      expect(layer.entities.values).toHaveLength(6);
+      const time = Cesium.JulianDate.now();
+      for (const entity of layer.entities.values) {
+        const result = component['assessmentByEntity'].get(entity.id)!;
+        expect([base, unavailable]).toContain(result);
+        if (entity.polyline) {
+          expect(entity.polyline.clampToGround?.getValue(time)).toBe(true);
+          expect(entity.polyline.width?.getValue(time)).toBe(1.5);
+          const points = entity.polyline.positions!.getValue(time);
+          expect(points[0]).toEqual(points[points.length - 1]);
+          continue;
+        }
+        const expected = result.status === 'AVAILABLE' ? component.colors.low : '#89918d';
+        expect(entity.polygon!.material!.getValue(time).color)
+          .toEqual(Cesium.Color.fromCssColorString(expected).withAlpha(0.65));
+      }
+      component.drawArea();
+      expect(layer.show).toBe(false);
+      component.cancelDrawing();
+      expect(layer.show).toBe(true);
+      component['clearAssessmentResults']();
+      expect(dataSources.length).toBe(0);
+      expect(component['assessmentByEntity'].size).toBe(0);
+    });
+
+    it('uses a static loading fill for reduced motion and cleans up its listener on error', () => {
+      const response = new Subject<never[]>();
+      calculateFWI.mockReturnValue(response);
+      const preference = { matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() };
+      vi.stubGlobal('matchMedia', vi.fn(() => preference));
+      component.drawArea();
+      addPoints(3);
+      component.finishDrawing();
+      const material = source.entities.getById('drawn-area')!.polygon!.material!;
+      const time = Cesium.JulianDate.now();
+      expect(material.getValue(time).color.alpha).toBe(0.35);
+      expect(component['assessmentAnimationFrame']).toBeUndefined();
+      const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      try {
+        response.error(new HttpErrorResponse({ status: 500 }));
+        expect(preference.removeEventListener).toHaveBeenCalledWith(
+          'change', component['onAssessmentMotionChange'],
+        );
+        expect(source.entities.getById('drawn-area')!.polygon!.material!.isConstant).toBe(true);
+      } finally {
+        log.mockRestore();
+      }
     });
 
     it('should cancel and restore controls while preserving the heatmap visibility preference', async () => {

@@ -47,6 +47,31 @@
         "hide": "Ocultar condiciones"
     },
     "infoPanel": {
+        "summary": {
+            "title": "Resumen del área",
+            "maximum": "FWI máximo entre las subáreas disponibles",
+            "maximumHint": "Es el valor más alto encontrado, no el FWI uniforme de toda la selección.",
+            "unavailable": "FWI no disponible",
+            "distribution": "Distribución por superficie",
+            "distributionHint": "Porcentajes sobre toda la superficie evaluada, incluida la parte sin datos. Los valores redondeados pueden no sumar exactamente 100%.",
+            "withData": "Superficie con datos",
+            "withoutData": "Superficie sin datos",
+            "date": "Fechas del FWI disponible",
+            "model": "Modelo meteorológico",
+            "mixedDates": "Hay subáreas con fechas diferentes; este resumen no representa un único día."
+        },
+        "selected": {
+            "eyebrow": "Evaluación experimental",
+            "title": "Área seleccionada",
+            "introduction": "El backend calcula el FWI diario por subárea a partir de datos meteorológicos.",
+            "notice": "Calculamos el índice FWI con su método establecido, no con valores ficticios. Los datos del modelo y la inicialización son estimaciones: no hemos validado la precisión local y esto no es un aviso oficial.",
+            "resultTitle": "FWI por subárea",
+            "resultHint": "La respuesta del backend se ha recibido. La visualización de los valores y detalles por subárea todavía está pendiente.",
+            "source": "Open-Meteo / AROME HD",
+            "providers": "Requiere internet y WebGL. El visor y la meteorología utilizan servicios externos. El FWI describe condiciones meteorológicas favorables a la intensidad y propagación del fuego; no es una probabilidad de ignición ni una evaluación completa del riesgo."
+        },
+        "loading": "Calculando el FWI del área seleccionada…",
+        "assessmentError": "No se ha podido calcular el FWI. Vuelve a dibujar el área para intentarlo de nuevo.",
         "eyebrow": "Diseño con mapa real",
         "title": "Área de ejemplo",
         "introduction": "La interfaz rodea a Cesium, no sustituye su terreno por una ilustración.",
@@ -74,7 +99,7 @@
         },
         "safety": {
             "title": "Demo educativa, no aviso oficial.",
-            "description": "No uses los números de esta maqueta para tomar decisiones. Un FWI bajo no significa que sea seguro.",
+            "description": "No uses esta web como única base para decisiones de seguridad. Un FWI bajo no significa que sea seguro. Consulta las restricciones y avisos oficiales.",
             "link": "Entender las limitaciones",
             "providers": "Requiere internet y WebGL. El visor utiliza servicios externos. Los proveedores externos reciben las peticiones de los mosaicos visibles. Su uso en producción requiere revisar condiciones y cuotas. Los valores FWI son ficticios y no evalúan el riesgo real."
         }

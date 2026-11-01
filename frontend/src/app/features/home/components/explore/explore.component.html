@@ -1,5 +1,10 @@
 <section id="explore">
-  <app-cesium-map>
-    <app-info-panel></app-info-panel>
+  <app-cesium-map #map>
+    <app-info-panel
+      [loading]="map.assessmentLoading()"
+      [hasSelectedArea]="map.hasSelectedArea()"
+      [assessmentError]="map.assessmentError()"
+      [assessments]="map.assessments()"
+    ></app-info-panel>
   </app-cesium-map>
 </section>

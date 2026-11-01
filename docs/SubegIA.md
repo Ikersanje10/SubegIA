@@ -70,6 +70,41 @@ The current preview uses real terrain/imagery but fictitious assessment values. 
 6. Read general prevention guidance, source links, and current official restrictions.
 7. Edit or clear the area and repeat.
 
+Assessment loading (implemented 2026-11-01): the Angular map owns an assessment
+signal, separate from initial map loading. The projected information panel
+replaces its result/context fields with reusable CSS shimmer skeletons during
+the request, keeping safety notices visible. Loading is cleared on completion,
+error or component teardown; overlapping assessments are blocked. The mobile
+conditions sheet opens during the request. ES/EU/EN status/error messages,
+`aria-busy`, decorative skeletons and reduced-motion support are included.
+The panel switches from example copy to selected-area experimental copy once
+an area is submitted, and never restores the fictitious score for that area,
+including after errors. The Figma block has been removed.
+After submission, the example map layer and its example/heatmap controls stay
+hidden, including during redraw/cancel. The FWI category legend remains visible
+independently of the previous example heatmap visibility preference.
+The user's previous selection is temporarily hidden while placing a new
+outline; cancelling restores the same entity without deleting its geometry.
+Backend subareas are now rendered with GeoJsonDataSource, preserving polygon
+holes and multipolygon parts. Category colors reuse the legend; unavailable
+cells use grey.
+Each subarea ring also has a thin dark terrain-following polyline, including
+holes and multipolygon parts, so equal-category neighbours remain distinguishable.
+Loading includes asynchronous layer creation, errors remain
+visible, and the original selection keeps only its outline on success.
+Redrawing hides/restores both layers; a new submission clears previous results.
+Full response metadata is retained for future subarea selection/panel details.
+The information panel now derives the maximum available FWI/category, surface
+percentages by category and with/without data, and distinct dates/models from
+the response. Turf area accounts for clipped geometries, holes and multipolygons.
+Category percentages use the whole returned surface as denominator; missing
+data never counts as zero FWI. Empty/all-unavailable responses show no score.
+Mixed available dates are explicitly flagged. Subarea clicking remains pending.
+The selected Cesium polygon now pulses in
+grey-sage transparency during the request and returns to a neutral fill on
+completion/error. Its outline is preserved. The render loop runs only during
+loading and is cleaned up on teardown; reduced-motion uses a static fill.
+
 ## 7. Learning goals
 
 | Learning area | Intended experience |

@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import { By } from '@angular/platform-browser';
+import { of } from 'rxjs';
+import { AssessmentService } from '../../../../api/assessment.service';
 import { CesiumMapComponent } from './components/cesium-map/cesium-map.component';
 import { ExploreComponent } from './explore.component';
 
@@ -13,7 +15,10 @@ describe('ExploreComponent', () => {
     CesiumMapComponent.prototype['initMap'] = async () => undefined;
     await TestBed.configureTestingModule({
       imports: [ExploreComponent],
-      providers: [provideTranslateService()],
+      providers: [
+        provideTranslateService(),
+        { provide: AssessmentService, useValue: { calculateFWI: () => of([]) } },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ExploreComponent);
@@ -27,6 +32,22 @@ describe('ExploreComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('passes assessment loading and errors from the map to the projected panel', async () => {
+    const element: HTMLElement = fixture.nativeElement;
+    const map: CesiumMapComponent = fixture.debugElement.query(By.directive(CesiumMapComponent))
+      .componentInstance;
+    map.assessmentLoading.set(true);
+    await fixture.whenStable();
+    expect(element.querySelector('app-info-panel app-skeleton')).not.toBeNull();
+    expect(element.querySelector('app-info-panel aside')?.getAttribute('aria-busy')).toBe('true');
+
+    map.assessmentLoading.set(false);
+    map.assessmentError.set(true);
+    await fixture.whenStable();
+    expect(element.querySelector('app-info-panel app-skeleton')).toBeNull();
+    expect(element.querySelector('app-info-panel [role="alert"]')).not.toBeNull();
   });
 
   it('projects the same information panel into the map without duplicating it', async () => {
@@ -43,7 +64,7 @@ describe('ExploreComponent', () => {
 
       expect(element.querySelector('#map-conditions app-info-panel')).toBe(originalPanel);
       expect(element.querySelectorAll('app-info-panel')).toHaveLength(1);
-      expect(element.querySelectorAll('#limitations')).toHaveLength(1);
+      expect(element.querySelectorAll('#map-limitations')).toHaveLength(1);
       expect(element.querySelector('.map')).toBe(originalCanvasContainer);
 
       map.toggleInteraction();

@@ -27,7 +27,7 @@
     <div #mapCredits class="map-credits"></div>
     <aside
       class="fwi-legend"
-      [class.hidden]="drawing() || hiddeHeatMap()"
+      [class.hidden]="!hasSelectedArea() && (drawing() || hiddeHeatMap())"
       aria-labelledby="fwi-legend-title"
     >
       <h3 id="fwi-legend-title">{{ 'mapLegend.title' | translate }}</h3>
@@ -64,7 +64,7 @@
     </div>
     <div class="mapControls" [class.hidden]="!interactive() || drawing()">
       <div class="controlButtonsContainer">
-        <button #drawButton class="drawArea" (click)="drawArea()">{{ 'mapControls.draw' | translate }}</button>
+        <button #drawButton class="drawArea" (click)="drawArea()" [attr.aria-disabled]="assessmentLoading()">{{ 'mapControls.draw' | translate }}</button>
         <button class="closeMap" (click)="toggleInteraction()">{{ 'mapControls.close' | translate }}</button>
       </div>
       <p>{{ 'mapControls.navigationHint' | translate }}</p>
@@ -92,7 +92,7 @@
       }
     </div>
 
-    <div class="mapExampleControls" [class.hidden]="!interactive() || drawing()">
+    <div class="mapExampleControls" [class.hidden]="!interactive() || drawing() || hasSelectedArea()">
       <button class="mapExampleControlsButton example-area-button" (click)="showExampleArea()">
         {{ 'mapControls.example' | translate }}
       </button>
@@ -118,7 +118,7 @@
         [disabled]="drawing()"
         (click)="toggleConditions()"
       >
-        {{ (conditionsOpen() ? 'mapConditions.hide' : 'mapConditions.show') | translate }}
+        {{ (conditionsOpen() ? 'mapConditions.hide' : hasSelectedArea() ? 'infoPanel.selected.title' : 'mapConditions.show') | translate }}
       </button>
     }
 

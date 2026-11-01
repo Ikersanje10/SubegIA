@@ -1,53 +1,136 @@
-<aside class="info-panel" aria-labelledby="info-panel-title">
+<p class="assessment-status" role="status" aria-atomic="true" [textContent]="loading() ? ('infoPanel.loading' | translate) : ''"></p>
+@if (assessmentError()) {
+  <p class="assessment-error" role="alert">{{ 'infoPanel.assessmentError' | translate }}</p>
+}
+<aside class="info-panel" aria-labelledby="info-panel-title" [attr.aria-busy]="loading()">
   <header class="panel-header">
-    <p class="eyebrow">{{ 'infoPanel.eyebrow' | translate }}</p>
-    <h2 id="info-panel-title">{{ 'infoPanel.title' | translate }}</h2>
-    <p class="introduction">{{ 'infoPanel.introduction' | translate }}</p>
+    <p class="eyebrow">{{ (hasSelectedArea() ? 'infoPanel.selected.eyebrow' : 'infoPanel.eyebrow') | translate }}</p>
+    <h2 id="info-panel-title">{{ (hasSelectedArea() ? 'infoPanel.selected.title' : 'infoPanel.title') | translate }}</h2>
+    <p class="introduction">{{ (hasSelectedArea() ? 'infoPanel.selected.introduction' : 'infoPanel.introduction') | translate }}</p>
   </header>
 
-  <p class="demo-notice">{{ 'infoPanel.demoNotice' | translate }}</p>
+  <p class="demo-notice">{{ (hasSelectedArea() ? 'infoPanel.selected.notice' : 'infoPanel.demoNotice') | translate }}</p>
 
   <section class="example-result" aria-labelledby="example-result-title">
     <h3 id="example-result-title" class="eyebrow">
-      {{ 'infoPanel.result.title' | translate }}
+      {{ (hasSelectedArea() ? 'infoPanel.summary.title' : 'infoPanel.result.title') | translate }}
     </h3>
-    <div class="result-reading">
-      <p class="fwi-reading"><strong>27.4</strong><span>FWI</span></p>
-      <span class="danger-badge">{{ 'infoPanel.result.high' | translate }}</span>
-    </div>
-    <p class="result-hint">{{ 'infoPanel.result.hint' | translate }}</p>
+    @if (loading()) {
+      <div class="result-reading">
+        <app-skeleton width="9rem" height="3.3rem"></app-skeleton>
+        <app-skeleton width="4rem" height="1.75rem"></app-skeleton>
+      </div>
+      <div class="result-skeleton">
+        <app-skeleton></app-skeleton>
+        <app-skeleton width="75%"></app-skeleton>
+      </div>
+    } @else if (hasSelectedArea()) {
+      @if (!assessmentError()) {
+        @if (summary().maximum; as maximum) {
+          <p class="result-hint">{{ 'infoPanel.summary.maximum' | translate }}</p>
+          <div class="result-reading">
+            <p class="fwi-reading"><strong>{{ maximum.fwi | number:'1.1-1' }}</strong><span>FWI</span></p>
+            @if (maximum.riskLevel; as level) {
+              <span class="danger-badge">{{ ('mapLegend.levels.' + riskLabels[level]) | translate }}</span>
+            }
+          </div>
+          <p class="result-hint">{{ 'infoPanel.summary.maximumHint' | translate }}</p>
+        } @else {
+          <p class="result-hint">{{ 'infoPanel.summary.unavailable' | translate }}</p>
+        }
+        @if (summary().availablePercent !== null) {
+          <section class="summary-distribution" aria-labelledby="distribution-title">
+            <h3 id="distribution-title">{{ 'infoPanel.summary.distribution' | translate }}</h3>
+            <p class="result-hint">{{ 'infoPanel.summary.distributionHint' | translate }}</p>
+            <dl>
+              @for (entry of summary().distribution; track entry.level) {
+                <div>
+                  <dt>{{ ('mapLegend.levels.' + riskLabels[entry.level]) | translate }}</dt>
+                  <dd>{{ entry.percent | number:'1.1-1' }}%</dd>
+                </div>
+              }
+              <div>
+                <dt>{{ 'infoPanel.summary.withData' | translate }}</dt>
+                <dd>{{ summary().availablePercent | number:'1.1-1' }}%</dd>
+              </div>
+              <div>
+                <dt>{{ 'infoPanel.summary.withoutData' | translate }}</dt>
+                <dd>{{ summary().unavailablePercent | number:'1.1-1' }}%</dd>
+              </div>
+            </dl>
+          </section>
+        }
+      }
+    } @else {
+      <div class="result-reading">
+        <p class="fwi-reading"><strong>27.4</strong><span>FWI</span></p>
+        <span class="danger-badge">{{ 'infoPanel.result.high' | translate }}</span>
+      </div>
+      <p class="result-hint">{{ 'infoPanel.result.hint' | translate }}</p>
+    }
   </section>
 
   <section class="context panel-section" aria-labelledby="panel-context-title">
     <h3 id="panel-context-title">{{ 'infoPanel.context.title' | translate }}</h3>
-    <dl>
-      <div>
-        <dt>{{ 'infoPanel.context.engine' | translate }}</dt>
-        <dd>CesiumJS</dd>
+    @if (loading()) {
+      <div class="context-skeleton" aria-hidden="true">
+        @for (row of [0, 1, 2, 3, 4]; track row) {
+          <div>
+            <app-skeleton width="80%"></app-skeleton>
+            <app-skeleton></app-skeleton>
+          </div>
+        }
       </div>
-      <div>
-        <dt>{{ 'infoPanel.context.terrain' | translate }}</dt>
-        <dd>Cesium World Terrain</dd>
-      </div>
-      <div>
-        <dt>{{ 'infoPanel.context.imagery' | translate }}</dt>
-        <dd>{{ 'infoPanel.context.imageryValue' | translate }}</dd>
-      </div>
-      <div>
-        <dt>{{ 'infoPanel.context.fwiSource' | translate }}</dt>
-        <dd>{{ 'infoPanel.context.fwiSourceValue' | translate }}</dd>
-      </div>
-      <div>
-        <dt>{{ 'infoPanel.context.drawing' | translate }}</dt>
-        <dd>{{ 'infoPanel.context.drawingValue' | translate }}</dd>
-      </div>
-    </dl>
-  </section>
-
-  <section class="design-notes panel-section" aria-labelledby="panel-design-title">
-    <h3 id="panel-design-title">{{ 'infoPanel.design.title' | translate }}</h3>
-    <p>{{ 'infoPanel.design.instructions' | translate }}</p>
-    <p>{{ 'infoPanel.design.prototype' | translate }}</p>
+    } @else if (hasSelectedArea()) {
+      @if (!assessmentError()) {
+        <dl>
+          <div>
+            <dt>{{ 'infoPanel.summary.date' | translate }}</dt>
+            <dd>
+              @for (date of summary().dates; track date) {
+                <time [attr.datetime]="date">{{ date }}</time>
+              } @empty {
+                {{ 'infoPanel.summary.unavailable' | translate }}
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>{{ 'infoPanel.summary.model' | translate }}</dt>
+            <dd>{{ summary().models.join(', ') || ('infoPanel.summary.unavailable' | translate) }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'infoPanel.context.fwiSource' | translate }}</dt>
+            <dd>Open-Meteo</dd>
+          </div>
+        </dl>
+        @if (summary().dates.length > 1) {
+          <p class="result-hint">{{ 'infoPanel.summary.mixedDates' | translate }}</p>
+        }
+      }
+    } @else {
+      <dl>
+        <div>
+          <dt>{{ 'infoPanel.context.engine' | translate }}</dt>
+          <dd>CesiumJS</dd>
+        </div>
+        <div>
+          <dt>{{ 'infoPanel.context.terrain' | translate }}</dt>
+          <dd>Cesium World Terrain</dd>
+        </div>
+        <div>
+          <dt>{{ 'infoPanel.context.imagery' | translate }}</dt>
+          <dd>{{ 'infoPanel.context.imageryValue' | translate }}</dd>
+        </div>
+        <div>
+          <dt>{{ 'infoPanel.context.fwiSource' | translate }}</dt>
+          <dd>{{ (hasSelectedArea() ? 'infoPanel.selected.source' : 'infoPanel.context.fwiSourceValue') | translate }}</dd>
+        </div>
+        <div>
+          <dt>{{ 'infoPanel.context.drawing' | translate }}</dt>
+          <dd>{{ 'infoPanel.context.drawingValue' | translate }}</dd>
+        </div>
+      </dl>
+    }
   </section>
 
   <div class="safety-section panel-section">
@@ -57,7 +140,7 @@
       <a href="#map-limitations">{{ 'infoPanel.safety.link' | translate }}</a>
     </div>
     <p id="map-limitations" class="provider-notice" tabindex="-1">
-      {{ 'infoPanel.safety.providers' | translate }}
+      {{ (hasSelectedArea() ? 'infoPanel.selected.providers' : 'infoPanel.safety.providers') | translate }}
     </p>
   </div>
 </aside>
