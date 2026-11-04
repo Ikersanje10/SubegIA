@@ -54,6 +54,18 @@ describe('CesiumMapComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('keeps example fills eligible for terrain-draped ground primitives', () => {
+    const entities = [
+      component['createExampleArea'](Cesium),
+      ...component.cells.map(cell => component['createCell'](Cesium, cell)),
+    ];
+    for (const entity of entities) {
+      expect(entity.polygon!.height).toBeUndefined();
+      expect(entity.polygon!.extrudedHeight).toBeUndefined();
+      expect(entity.polygon!.perPositionHeight?.getValue()).not.toBe(true);
+    }
+  });
+
   describe('Gipuzkoa boundary', () => {
     it('loads all polygon parts as closed red terrain-following borders with visible attribution', async () => {
       const rings = [-2.5, -2.3, -2.1, -1.9].map(longitude => [[
@@ -1187,6 +1199,7 @@ describe('CesiumMapComponent', () => {
 
     it('should finalize a terrain-clamped polygon and remove only the draft and vertices', async () => {
       component.drawArea();
+      expect(source.entities.getById('drawing-draft')!.polygon!.height).toBeUndefined();
       addPoints(3);
       await fixture.whenStable();
       button('Finalizar').click();
@@ -1194,6 +1207,8 @@ describe('CesiumMapComponent', () => {
       const time = Cesium.JulianDate.now();
       const area = source.entities.getById('drawn-area')!;
 
+      expect(area.polygon!.height).toBeUndefined();
+      expect(area.polygon!.perPositionHeight?.getValue()).not.toBe(true);
       expect(component.drawing()).toBe(false);
       expect(component.interactive()).toBe(true);
       expect(area.polygon!.hierarchy!.getValue(time).positions).toEqual(positions.slice(0, 3));
@@ -1404,7 +1419,7 @@ describe('CesiumMapComponent', () => {
       Object.defineProperty(component, 'viewer', { value: viewer, writable: true });
       const base: SubAreaAssessment = {
         column: 0, row: 0,
-        geometry: { type: 'Polygon', coordinates: [[[-2.5, 43.1], [-2.49, 43.1], [-2.49, 43.11], [-2.5, 43.1]]] },
+        geometry: { type: 'Polygon', coordinates: [[[-2.5, 43.1, 200], [-2.49, 43.1, 200], [-2.49, 43.11, 200], [-2.5, 43.1, 200]]] },
         fwi: 2, riskLevel: 'LOW', date: '2026-11-01', status: 'AVAILABLE',
         unavailableReason: null, moistureState: null, model: 'meteofrance_arome_france_hd',
         sourceLongitude: -2.5, sourceLatitude: 43.1, experimental: true,
@@ -1433,6 +1448,8 @@ describe('CesiumMapComponent', () => {
           continue;
         }
         const expected = result.status === 'AVAILABLE' ? component.colors.low : '#89918d';
+        expect(entity.polygon!.height).toBeUndefined();
+        expect(entity.polygon!.perPositionHeight!.getValue(time)).toBe(false);
         expect(entity.polygon!.material!.getValue(time).color)
           .toEqual(Cesium.Color.fromCssColorString(expected).withAlpha(0.65));
       }

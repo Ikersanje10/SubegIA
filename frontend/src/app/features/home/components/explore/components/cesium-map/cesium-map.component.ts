@@ -265,7 +265,6 @@ export class CesiumMapComponent implements OnDestroy {
       polygon: {
         hierarchy: new Cesium.PolygonHierarchy(positions),
         material: Cesium.Color.fromCssColorString('#b9d3a2').withAlpha(0.25),
-        height: 0,
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         classificationType: Cesium.ClassificationType.TERRAIN,
       },
@@ -448,6 +447,8 @@ export class CesiumMapComponent implements OnDestroy {
         Cesium.Color.fromCssColorString(color).withAlpha(0.65),
       );
       entity.polygon.outline = new Cesium.ConstantProperty(false);
+      entity.polygon.height = undefined;
+      entity.polygon.perPositionHeight = new Cesium.ConstantProperty(false);
       entity.polygon.classificationType = new Cesium.ConstantProperty(Cesium.ClassificationType.TERRAIN);
       entities.set(entity.id, result);
     }
@@ -571,7 +572,6 @@ export class CesiumMapComponent implements OnDestroy {
         ),
         show: new Cesium.CallbackProperty(() => this.canFinishDrawing(), false),
         material: color.withAlpha(0.25),
-        height: 0,
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         classificationType: Cesium.ClassificationType.TERRAIN,
       },
@@ -744,7 +744,6 @@ export class CesiumMapComponent implements OnDestroy {
       polygon: {
         hierarchy: new Cesium.PolygonHierarchy(positions),
         material: color.withAlpha(0.55),
-        height: 0,
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         classificationType: Cesium.ClassificationType.TERRAIN,
       },
@@ -769,7 +768,6 @@ export class CesiumMapComponent implements OnDestroy {
       polygon: {
         hierarchy: new Cesium.PolygonHierarchy(positions),
         fill: false,
-        height: 0,
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         classificationType: Cesium.ClassificationType.TERRAIN,
       },

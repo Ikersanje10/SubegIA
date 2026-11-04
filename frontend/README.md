@@ -54,6 +54,11 @@ added buildings explicitly request a frame. A settled scene does not redraw
 continuously while the user reads or scrolls the page. Terrain, imagery,
 resolution and visual quality are unchanged.
 
+Selection, draft, example and assessment fills use ground primitives without an
+explicit polygon height or per-position heights. In Cesium an explicit height
+disables ground primitives even with `CLAMP_TO_GROUND`, causing terrain to cut
+through the fill. The scene retains its 1.5x terrain exaggeration.
+
 ## Initial map loading
 
 An Earth loading overlay covers the complete map workspace while the initial
