@@ -104,6 +104,11 @@ explore component without duplicating it or recreating the viewer. Escape closes
 the sheet and returns focus to the button without scrolling. Drawing closes and disables the sheet,
 and leaving exploration resets it.
 
+On phones, drawing controls are docked at the bottom of the map viewport and
+limited to 35% of its height. Actions use three columns; instructions, errors
+and coordinate entry remain available through internal scrolling. The rest of
+the map stays clear for drawing, including in landscape orientation.
+
 Global styles lock page scrolling while the map has its `fullScreen` class,
 without disabling the information panel's internal scrolling. Closing the map or
 removing its component automatically releases the lock.
