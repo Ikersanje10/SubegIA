@@ -100,7 +100,9 @@ export class CesiumMapComponent implements OnDestroy {
   readonly drawingMessage = signal('');
   readonly conditionsOpen = signal(false);
   readonly wideLayout = signal(false);
-  readonly useBottomSheet = computed(() => this.interactive() && !this.wideLayout());
+  readonly compactTour = signal(false);
+  readonly useBottomSheet = computed(() => this.interactive()
+    && (!this.wideLayout() || (this.tourStep() !== null && this.compactTour())));
 
 
   mapLoading: WritableSignal<boolean> = signal(true);
@@ -175,6 +177,8 @@ export class CesiumMapComponent implements OnDestroy {
   }
 
   updateLayout() {
+    this.compactTour.set(window.innerWidth < 800 || window.innerHeight < 500);
+    if (this.tourStep() === 3 && this.useBottomSheet()) this.conditionsOpen.set(true);
     const wide = window.innerWidth >= 800;
     if (wide === this.wideLayout()) return;
 
@@ -184,7 +188,7 @@ export class CesiumMapComponent implements OnDestroy {
     const focusInPanel = activeElement !== null && panel?.nativeElement.contains(activeElement);
     const focusOnButton = activeElement === button?.nativeElement;
     this.wideLayout.set(wide);
-    this.conditionsOpen.set(false);
+    this.conditionsOpen.set(this.tourStep() === 3 && this.useBottomSheet());
 
     if (this.interactive() && (focusInPanel || focusOnButton)) {
       afterNextRender(() => {

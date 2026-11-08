@@ -42,10 +42,12 @@ describe('MiniTourComponent', () => {
     help.click();
     await fixture.whenStable();
     expect(fixture.componentInstance.step()).toBe(0);
+    expect(fixture.nativeElement.classList.contains('tour-open')).toBe(true);
     expect(help.getAttribute('aria-expanded')).toBe('true');
     fixture.componentInstance.close();
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.tour-card')).toBeNull();
+    expect(fixture.nativeElement.classList.contains('tour-open')).toBe(false);
     const anotherVisit = TestBed.createComponent(MiniTourComponent);
     anotherVisit.componentRef.setInput('ready', true);
     await anotherVisit.whenStable();
@@ -162,7 +164,23 @@ describe('MiniTourComponent', () => {
         runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
         rules: { 'color-contrast': { enabled: false } },
       });
+
       expect(result.violations).toEqual([]);
     }
+  });
+
+  it('keeps navigation and close outside the scrollable explanation', async () => {
+    const fixture = TestBed.createComponent(MiniTourComponent);
+    fixture.componentRef.setInput('ready', true);
+    fixture.componentInstance.start();
+    await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
+    const body = element.querySelector('.tour-body')!;
+    expect(body.contains(element.querySelector('#mini-tour-description'))).toBe(true);
+    expect(body.querySelector('button')).toBeNull();
+    expect(element.querySelector('.tour-heading .tour-close')).not.toBeNull();
+    expect(element.querySelector('.tour-actions .primary')).not.toBeNull();
+    expect(body.getAttribute('tabindex')).toBe('0');
+    expect(body.getAttribute('aria-label')).toBe(es.miniTour.steps.navigation.title);
   });
 });

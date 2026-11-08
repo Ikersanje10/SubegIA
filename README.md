@@ -15,6 +15,9 @@ placed and no assessment is requested. Closing restores the previous selection,
 selected subarea and map/panel open state. Existing drafts, pending calculations
 and retry countdowns must finish before starting. Map tools are temporarily
 inert during the tour. Text is available in ES/EU/EN.
+On narrow screens the active tour occupies a compact bottom row, rather than
+covering map tools or the results sheet. Only explanation text scrolls; the
+close and step-navigation buttons remain visible.
 
 The invitation and current step exist only in memory: no cookies, browser
 storage or backend requests are used to remember the decision. Reloading the

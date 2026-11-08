@@ -1,6 +1,7 @@
 <section
   #tourWorkspace
   class="cesium-map"
+  [class.tour-active]="tourStep() !== null"
   [class.fullScreen]="interactive()"
   [class.map-unavailable]="mapUnavailable()"
   [attr.role]="interactive() ? 'dialog' : null"
@@ -31,7 +32,7 @@
     <div #mapCredits class="map-credits"></div>
     <aside
       class="fwi-legend"
-      [class.hidden]="!hasSelectedArea() && (drawing() || hiddeHeatMap())"
+      [class.hidden]="(tourStep() !== null && compactTour()) || (!hasSelectedArea() && (drawing() || hiddeHeatMap()))"
       aria-labelledby="fwi-legend-title"
     >
       <h2 id="fwi-legend-title">{{ (hasSelectedArea() ? 'mapLegend.actualTitle' : 'mapLegend.title') | translate }}</h2>

@@ -191,6 +191,35 @@ describe('CesiumMapComponent', () => {
     expect(calculateFWI).not.toHaveBeenCalled();
   });
 
+  it('keeps the tour results sheet open when rotating a mobile viewport', async () => {
+    const element: HTMLElement = fixture.nativeElement;
+    for (const target of element.querySelectorAll<HTMLElement>('.mapControls')) {
+      target.scrollIntoView = vi.fn();
+    }
+    element.querySelector<HTMLButtonElement>('.help-button')!.click();
+    await fixture.whenStable();
+    element.querySelector<HTMLElement>('.conditions-button')!.scrollIntoView = vi.fn();
+    for (let i = 0; i < 3; i++) {
+      element.querySelector<HTMLButtonElement>('.tour-actions .primary')!.click();
+      await fixture.whenStable();
+    }
+    expect(element.querySelector('.cesium-map')?.classList.contains('tour-active')).toBe(true);
+    vi.stubGlobal('innerWidth', 844);
+    vi.stubGlobal('innerHeight', 390);
+    component.updateLayout();
+    await fixture.whenStable();
+    expect(component.wideLayout()).toBe(true);
+    expect(component.compactTour()).toBe(true);
+    expect(component.useBottomSheet()).toBe(true);
+    expect(component.conditionsOpen()).toBe(true);
+    expect(component.tourStep()).toBe(3);
+    expect(calculateFWI).not.toHaveBeenCalled();
+    element.querySelector<HTMLButtonElement>('.tour-close')!.click();
+    await fixture.whenStable();
+    expect(element.querySelector('.cesium-map')?.classList.contains('tour-active')).toBe(false);
+    expect(component.interactive()).toBe(false);
+  });
+
   it('keeps example fills eligible for terrain-draped ground primitives', () => {
     const entities = [
       component['createExampleArea'](Cesium),

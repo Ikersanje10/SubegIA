@@ -6,7 +6,10 @@ import { TranslatePipe } from '@ngx-translate/core';
   imports: [TranslatePipe],
   templateUrl: './mini-tour.component.html',
   styleUrl: './mini-tour.component.css',
-  host: { '(keydown.escape)': 'handleEscape($event)' },
+  host: {
+    '(keydown.escape)': 'handleEscape($event)',
+    '[class.tour-open]': 'step() !== null',
+  },
 })
 export class MiniTourComponent {
   readonly ready = input(false);
