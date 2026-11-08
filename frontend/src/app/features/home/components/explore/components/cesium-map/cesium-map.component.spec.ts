@@ -54,6 +54,143 @@ describe('CesiumMapComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('opens tools automatically without placing corners or requesting an assessment', async () => {
+    const element: HTMLElement = fixture.nativeElement;
+    const targets = element.querySelectorAll<HTMLElement>('.exploreMapContainer, .mapControls, .conditions-sheet');
+    for (const target of targets) target.scrollIntoView = vi.fn();
+    const help = element.querySelector<HTMLButtonElement>('.help-button')!;
+    help.click();
+    await fixture.whenStable();
+    element.querySelector<HTMLElement>('.conditions-button')!.scrollIntoView = vi.fn();
+    for (let step = 0; step < 4; step++) {
+      await fixture.whenStable();
+      expect(component.tourStep()).toBe(step);
+      const highlighted = element.querySelector<HTMLElement>('.tour-highlight')!;
+      expect(highlighted.classList.contains('hidden')).toBe(false);
+      expect(highlighted.scrollIntoView).toHaveBeenCalled();
+      expect(component.interactive()).toBe(true);
+      expect(component.drawing()).toBe(step === 1 || step === 2);
+      expect(component.pointCount()).toBe(0);
+      expect(element.querySelector('.map-viewport')?.hasAttribute('inert')).toBe(true);
+      if (step === 3) expect(component.conditionsOpen()).toBe(true);
+      expect(calculateFWI).not.toHaveBeenCalled();
+      element.querySelector<HTMLButtonElement>('.tour-actions .primary')!.click();
+    }
+    await fixture.whenStable();
+    expect(component.tourStep()).toBeNull();
+    expect(component.interactive()).toBe(false);
+    expect(component.drawing()).toBe(false);
+    expect(element.querySelector('.map-viewport')?.hasAttribute('inert')).toBe(false);
+    expect(element.querySelector('.tour-highlight')).toBeNull();
+    expect(element.querySelector('.tour-card')).toBeNull();
+    component.mapLoading.set(true);
+    await fixture.whenStable();
+    expect(element.querySelector('.help-button')).toBeNull();
+  });
+
+  it('does not start the tour or discard an existing draft', async () => {
+    component.interactive.set(true);
+    component.drawing.set(true);
+    await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
+    const points = [Cesium.Cartesian3.fromDegrees(-2.5, 43.1)];
+    component.drawingPoints.set(points);
+    await fixture.whenStable();
+    expect(element.querySelector<HTMLButtonElement>('.help-button')!.disabled).toBe(true);
+    element.querySelector<HTMLButtonElement>('.help-button')!.click();
+    await fixture.whenStable();
+    expect(component.tourStep()).toBeNull();
+    expect(component.interactive()).toBe(true);
+    expect(component.drawing()).toBe(true);
+    expect(component.drawingPoints()).toBe(points);
+    expect(calculateFWI).not.toHaveBeenCalled();
+  });
+
+  it('restores the original geometry, results and selected detail when closing during drawing', async () => {
+    const source = new Cesium.CustomDataSource('selection');
+    const selected = source.entities.add({
+      id: 'drawn-area',
+      polygon: { hierarchy: Cesium.Cartesian3.fromDegreesArray([-2.5, 43.1, -2.49, 43.1, -2.49, 43.11]) },
+    });
+    const hierarchy = selected.polygon!.hierarchy;
+    const results = new Cesium.GeoJsonDataSource('results');
+    const detail: SubAreaAssessment = {
+      column: 0, row: 0,
+      geometry: { type: 'Polygon', coordinates: [[[-2.5, 43.1], [-2.49, 43.1], [-2.49, 43.11], [-2.5, 43.1]]] },
+      fwi: 2, riskLevel: 'LOW', date: '2026-11-01', status: 'AVAILABLE',
+      unavailableReason: null, moistureState: null, model: 'meteofrance_arome_france_hd',
+      sourceLongitude: -2.5, sourceLatitude: 43.1, experimental: true,
+      initialState: { date: '2025-11-01', ffmc: 85, dmc: 6, dc: 15 },
+      calculationDays: 365,
+    };
+    component['Cesium'] = Cesium;
+    component['drawingSource'] = source;
+    component['assessmentSource'] = results;
+    component.hasSelectedArea.set(true);
+    component.assessments.set([detail]);
+    component.selectedAssessment.set(detail);
+    component.interactive.set(true);
+    component.conditionsOpen.set(true);
+    await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
+    for (const target of element.querySelectorAll<HTMLElement>('.mapControls, .conditions-button')) {
+      target.scrollIntoView = vi.fn();
+    }
+    element.querySelector<HTMLButtonElement>('.help-button')!.click();
+    await fixture.whenStable();
+    element.querySelector<HTMLButtonElement>('.tour-actions .primary')!.click();
+    await fixture.whenStable();
+    expect(component.drawing()).toBe(true);
+    expect(selected.show).toBe(false);
+    expect(results.show).toBe(false);
+    expect(component.selectedAssessment()).toBeNull();
+    element.querySelector('.tour-close')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+    await fixture.whenStable();
+    expect(component.tourStep()).toBeNull();
+    expect(component.interactive()).toBe(true);
+    expect(component.conditionsOpen()).toBe(true);
+    expect(component.drawing()).toBe(false);
+    expect(source.entities.getById('drawn-area')).toBe(selected);
+    expect(selected.polygon!.hierarchy).toBe(hierarchy);
+    expect(selected.show).toBe(true);
+    expect(source.entities.getById('drawing-draft')).toBeUndefined();
+    expect(results.show).toBe(true);
+    expect(component.assessments()).toEqual([detail]);
+    expect(component.selectedAssessment()).toBe(detail);
+    expect(calculateFWI).not.toHaveBeenCalled();
+  });
+
+  it('can go backwards from results and closes without retaining the tour draft', async () => {
+    component.wideLayout.set(true);
+    const element: HTMLElement = fixture.nativeElement;
+    for (const target of element.querySelectorAll<HTMLElement>('.mapControls, .conditions-sheet')) {
+      target.scrollIntoView = vi.fn();
+    }
+    element.querySelector<HTMLButtonElement>('.help-button')!.click();
+    for (let i = 0; i < 3; i++) {
+      await fixture.whenStable();
+      element.querySelector<HTMLButtonElement>('.tour-actions .primary')!.click();
+    }
+    await fixture.whenStable();
+    expect(component.drawing()).toBe(false);
+    element.querySelector<HTMLButtonElement>('.tour-actions button')!.click();
+    await fixture.whenStable();
+    expect(component.tourStep()).toBe(2);
+    expect(component.drawing()).toBe(true);
+    element.querySelector<HTMLButtonElement>('.tour-actions button')!.click();
+    await fixture.whenStable();
+    element.querySelector<HTMLButtonElement>('.tour-actions button')!.click();
+    await fixture.whenStable();
+    expect(component.tourStep()).toBe(0);
+    expect(component.drawing()).toBe(false);
+    element.querySelector<HTMLButtonElement>('.help-button')!.click();
+    await fixture.whenStable();
+    expect(component.interactive()).toBe(false);
+    expect(calculateFWI).not.toHaveBeenCalled();
+  });
+
   it('keeps example fills eligible for terrain-draped ground primitives', () => {
     const entities = [
       component['createExampleArea'](Cesium),

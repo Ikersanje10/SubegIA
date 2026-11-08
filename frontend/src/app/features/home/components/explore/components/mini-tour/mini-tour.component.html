@@ -1,0 +1,40 @@
+@if (ready()) {
+  @let current = step();
+  @if (current !== null) {
+    <section class="tour-card" id="mini-tour" role="dialog" aria-modal="false"
+      aria-labelledby="mini-tour-title" aria-describedby="mini-tour-description">
+      <div class="tour-heading">
+        <p class="tour-progress">{{ 'miniTour.progress' | translate: { current: current + 1, total: steps.length } }}</p>
+        <button #closeButton type="button" class="tour-close" (click)="close()"
+          [attr.aria-label]="'miniTour.close' | translate">&times;</button>
+      </div>
+      <h2 #stepTitle id="mini-tour-title" tabindex="-1">{{ ('miniTour.steps.' + steps[current] + '.title') | translate }}</h2>
+      <p id="mini-tour-description">{{ ('miniTour.steps.' + steps[current] + '.description') | translate }}</p>
+      <p class="tour-note">{{ 'miniTour.note' | translate }}</p>
+      <div class="tour-actions">
+        <button type="button" [disabled]="current === 0" (click)="previous()">{{ 'miniTour.previous' | translate }}</button>
+        <button type="button" class="primary" (click)="next()">
+          {{ (current === steps.length - 1 ? 'miniTour.finish' : 'miniTour.next') | translate }}
+        </button>
+      </div>
+    </section>
+  } @else if (invitationVisible()) {
+    <section class="tour-card" aria-labelledby="mini-tour-invitation">
+      <h2 id="mini-tour-invitation">{{ 'miniTour.invitation.title' | translate }}</h2>
+      <p>{{ 'miniTour.invitation.description' | translate }}</p>
+      @if (!available()) {
+        <p class="tour-note">{{ 'miniTour.busy' | translate }}</p>
+      }
+      <div class="tour-actions">
+        <button type="button" (click)="dismiss()">{{ 'miniTour.invitation.dismiss' | translate }}</button>
+        <button type="button" class="primary" [disabled]="!available()" (click)="start()">{{ 'miniTour.invitation.start' | translate }}</button>
+      </div>
+    </section>
+  }
+  <button #helpButton type="button" class="help-button" (click)="toggle()"
+    [disabled]="!available()"
+    [attr.aria-label]="'miniTour.help' | translate" [attr.title]="(available() ? 'miniTour.help' : 'miniTour.busy') | translate"
+    [attr.aria-expanded]="step() !== null" [attr.aria-controls]="step() !== null ? 'mini-tour' : null">
+    <span aria-hidden="true">?</span>
+  </button>
+}

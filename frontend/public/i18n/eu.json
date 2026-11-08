@@ -1,4 +1,38 @@
 {
+    "miniTour": {
+        "help": "SubegIA nola erabili",
+        "close": "Itxi bisita laburra",
+        "progress": "{{current}}. urratsa, {{total}} guztira",
+        "previous": "Aurrekoa",
+        "next": "Hurrengoa",
+        "finish": "Amaitu",
+        "note": "Hurrengoa aukerak tresnak automatikoki irekitzen ditu, erpinik jarri edo kalkulatu gabe. Ixtean aurreko hautaketa berreskuratzen duzu.",
+        "busy": "Bisita hasteko, amaitu edo utzi uneko marrazkia eta itxaron kalkulua edo berriro saiatzeko atzerako kontaketa amaitu arte.",
+        "invitation": {
+            "title": "Bisita labur bat nahi duzu?",
+            "description": "Lau urrats mapa eta emaitzak ezagutzeko. Aukerakoa da; ? botoitik berriro ireki dezakezu.",
+            "dismiss": "Orain ez",
+            "start": "Ikusi bisita laburra"
+        },
+        "steps": {
+            "navigation": {
+                "title": "1. Aurkitu zure eremua",
+                "description": "Bisitak mapa ireki du. Bisitatik kanpo, Arakatu mapa aukerak nabigazioa aktibatzen du Gipuzkoako zure eremura hurbildu eta mugitzeko. Itxi mapa aukerak orrira itzultzen zaitu."
+            },
+            "drawing": {
+                "title": "2. Marraztu eremu bat",
+                "description": "Bisitak marrazteko tresnak ireki ditu erpinik jarri gabe. Zure kabuz erabiltzean, sakatu Marraztu eremua eta jarri gutxienez hiru erpin ordenan, ertzak gurutzatu gabe eta Gipuzkoa barruan. Koordenatuak teklatuarekin ere sar ditzakezu."
+            },
+            "calculation": {
+                "title": "3. Eskatu kalkulua",
+                "description": "Hemen Desegin, Amaitu eta Utzi agertzen dira. Poligono baliodun batekin, Amaitu aukerak FWIa eskatzen du datu meteorologikoekin. Bisitak ez du Amaitu sakatzen edo eskaerarik bidaltzen. Kalkuluak huts egiten badu, paneletik berriro saia zaitezke."
+            },
+            "results": {
+                "title": "4. Ulertu emaitzak",
+                "description": "Bisitak bere zirriborro hutsa bertan behera utzi du eta panela erakusten du emaitza berririk sortu gabe. Begiratu laburpena hemen eta, zure kabuz kalkulatu ondoren, hautatu azpieremu bat xehetasunak eta data ikusteko. Hasierako adibidea fikziozkoa da; kalkuluak esperimentalak dira, ez abisu ofizialak edo sute-probabilitateak."
+            }
+        }
+    },
     "mapControls": {
         "title": "Mapa interaktiboa",
         "introduction": "Jarraitu orria mugitzen irakurtzen jarraitzeko. Aktibatu mapa bertan mugitzeko edo eremu bat marrazteko.",

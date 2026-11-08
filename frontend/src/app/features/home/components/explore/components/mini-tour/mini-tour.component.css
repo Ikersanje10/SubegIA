@@ -1,0 +1,100 @@
+:host {
+  --tour-right: max(1rem, env(safe-area-inset-right));
+  --tour-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.help-button, .tour-card {
+  position: fixed;
+  right: var(--tour-right);
+  z-index: 30;
+}
+
+button {
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--border-control);
+  border-radius: 0.5rem;
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.help-button {
+  bottom: var(--tour-bottom);
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 1.5rem;
+  font-weight: 600;
+  box-shadow: 0 3px 12px #0006;
+}
+
+.tour-card {
+  bottom: calc(var(--tour-bottom) + 60px);
+  width: min(23rem, calc(100vw - 2rem - env(safe-area-inset-right) - env(safe-area-inset-left)));
+  max-height: calc(100dvh - var(--tour-bottom) - 80px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1rem;
+  border: 1px solid var(--border-control);
+  border-radius: 0.75rem;
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  box-shadow: 0 4px 20px #0006;
+}
+
+h2 {
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+p {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.tour-note, .tour-progress {
+  color: var(--text-secondary);
+}
+
+.tour-heading, .tour-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.tour-progress {
+  margin: 0;
+}
+
+.tour-actions {
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.tour-close {
+  min-width: 44px;
+  padding: 0;
+  font-size: 1.5rem;
+}
+
+.primary {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+button:focus-visible, h2:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}

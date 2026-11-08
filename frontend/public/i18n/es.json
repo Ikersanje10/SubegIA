@@ -1,4 +1,38 @@
 {
+    "miniTour": {
+        "help": "Cómo usar SubegIA",
+        "close": "Cerrar el mini tour",
+        "progress": "Paso {{current}} de {{total}}",
+        "previous": "Anterior",
+        "next": "Siguiente",
+        "finish": "Terminar",
+        "note": "Siguiente abre las herramientas automáticamente, sin colocar esquinas ni calcular. Al cerrar recuperas tu selección anterior.",
+        "busy": "Para iniciar el tour, termina o cancela el dibujo actual y espera a que finalice el cálculo o el tiempo de reintento.",
+        "invitation": {
+            "title": "¿Quieres un mini tour?",
+            "description": "Cuatro pasos para conocer el mapa y sus resultados. Es opcional; puedes volver a abrirlo desde el botón ?.",
+            "dismiss": "Ahora no",
+            "start": "Ver mini tour"
+        },
+        "steps": {
+            "navigation": {
+                "title": "1. Encuentra tu zona",
+                "description": "El tour ha abierto el mapa. Fuera del tour, Explorar mapa activa la navegación para acercar y desplazar la vista hasta tu zona de Gipuzkoa. Cerrar mapa te devuelve a la página."
+            },
+            "drawing": {
+                "title": "2. Dibuja un área",
+                "description": "El tour ha abierto las herramientas de dibujo, sin colocar esquinas. Cuando lo uses por tu cuenta, pulsa Dibujar área y marca al menos tres esquinas en orden, sin cruzar los lados y dentro de Gipuzkoa. También puedes introducir las coordenadas con el teclado."
+            },
+            "calculation": {
+                "title": "3. Solicita el cálculo",
+                "description": "Aquí aparecen Deshacer, Finalizar y Cancelar. Con un polígono válido, Finalizar solicita el FWI con datos meteorológicos. El tour no pulsa Finalizar ni envía peticiones. Si un cálculo falla, el panel permite reintentar."
+            },
+            "results": {
+                "title": "4. Entiende los resultados",
+                "description": "El tour ha cancelado su borrador vacío y muestra el panel, sin generar resultados nuevos. Consulta aquí el resumen y, después de calcular por tu cuenta, selecciona una subzona para ver su detalle y fecha. El ejemplo inicial es ficticio; los cálculos son experimentales, no alertas oficiales ni probabilidades de incendio."
+            }
+        }
+    },
     "mapControls": {
         "title": "Mapa interactivo",
         "introduction": "Desliza para seguir leyendo. Activa el mapa para moverlo o dibujar una selección.",

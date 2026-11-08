@@ -5,6 +5,22 @@ inside Gipuzkoa. Angular 22/Cesium displays the results from Spring Boot/Java 25
 This is a learning demo, not an official warning system or locally validated
 fire-risk forecast.
 
+## Optional mini tour
+
+Once the map is ready, a dismissible invitation explains how to navigate, draw,
+request an assessment and read results. The circular **?** button at the bottom
+right reopens the four-step tour. Steps open the map and drawing tools, then
+cancel only the tour's empty draft to show the results panel. No corners are
+placed and no assessment is requested. Closing restores the previous selection,
+selected subarea and map/panel open state. Existing drafts, pending calculations
+and retry countdowns must finish before starting. Map tools are temporarily
+inert during the tour. Text is available in ES/EU/EN.
+
+The invitation and current step exist only in memory: no cookies, browser
+storage or backend requests are used to remember the decision. Reloading the
+page shows the invitation again. Escape closes the tour and focus returns to
+the help button.
+
 ## Local development
 
 Requirements: Java 25, Maven, Node.js 24 and npm. Run commands from the repository

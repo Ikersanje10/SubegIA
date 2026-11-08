@@ -1,4 +1,38 @@
 {
+    "miniTour": {
+        "help": "How to use SubegIA",
+        "close": "Close the mini tour",
+        "progress": "Step {{current}} of {{total}}",
+        "previous": "Previous",
+        "next": "Next",
+        "finish": "Finish",
+        "note": "Next opens the tools automatically, without placing corners or calculating. Closing restores your previous selection.",
+        "busy": "To start the tour, finish or cancel the current drawing and wait for the calculation or retry countdown to finish.",
+        "invitation": {
+            "title": "Would you like a mini tour?",
+            "description": "Four steps to discover the map and its results. It is optional; you can reopen it using the ? button.",
+            "dismiss": "Not now",
+            "start": "View mini tour"
+        },
+        "steps": {
+            "navigation": {
+                "title": "1. Find your area",
+                "description": "The tour has opened the map. Outside the tour, Explore map enables navigation so you can zoom and move to your area in Gipuzkoa. Close map returns you to the page."
+            },
+            "drawing": {
+                "title": "2. Draw an area",
+                "description": "The tour has opened the drawing tools without placing corners. When using the map yourself, select Draw area and place at least three corners in order, without crossing edges and within Gipuzkoa. You can also enter coordinates using the keyboard."
+            },
+            "calculation": {
+                "title": "3. Request the calculation",
+                "description": "Undo, Finish and Cancel appear here. With a valid polygon, Finish requests the FWI using weather data. The tour does not select Finish or send requests. If a calculation fails, you can retry from the panel."
+            },
+            "results": {
+                "title": "4. Understand the results",
+                "description": "The tour has cancelled its empty draft and shows the panel without generating new results. Check the summary here and, after calculating yourself, select a subarea to see its details and date. The initial example is fictitious; calculations are experimental, not official warnings or fire probabilities."
+            }
+        }
+    },
     "mapControls": {
         "title": "Interactive map",
         "introduction": "Scroll to keep reading. Activate the map to move around or draw a selection.",

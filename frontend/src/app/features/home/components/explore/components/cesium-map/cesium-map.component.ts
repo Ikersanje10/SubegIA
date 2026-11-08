@@ -12,9 +12,10 @@ import { AssessmentService } from '../../../../../../api/assessment.service';
 import { AssessmentRequest, FWIRiskLevel, Position, SubAreaAssessment } from '../../../../../../api/Assessment';
 import { assessmentFailure, type AssessmentErrorKey } from '../../../../../../api/assessment-error';
 import { CoordinateEntryComponent } from '../coordinate-entry/coordinate-entry.component';
+import { MiniTourComponent } from '../mini-tour/mini-tour.component';
 
 @Component({
-  imports: [TranslatePipe, CoordinateEntryComponent],
+  imports: [TranslatePipe, CoordinateEntryComponent, MiniTourComponent],
   selector: 'app-cesium-map',
   styleUrl: './cesium-map.component.css',
   templateUrl: './cesium-map.component.html',
@@ -25,6 +26,20 @@ import { CoordinateEntryComponent } from '../coordinate-entry/coordinate-entry.c
   },
 })
 export class CesiumMapComponent implements OnDestroy {
+  private readonly tourWorkspace = viewChild.required<ElementRef<HTMLElement>>('tourWorkspace');
+  readonly tourStep = signal<number | null>(null);
+  private tourState?: {
+    interactive: boolean;
+    conditionsOpen: boolean;
+    selectedAssessment: SubAreaAssessment | null;
+  };
+  private tourDrawing = false;
+  private readonly tourActions = [
+    () => this.showTourNavigation(),
+    () => this.showTourDrawing(),
+    () => this.showTourDrawing(),
+    () => this.showTourResults(),
+  ];
   private readonly mapEl = viewChild.required<ElementRef<HTMLDivElement>>('cesium');
   private readonly mapCredits = viewChild.required<ElementRef<HTMLDivElement>>('mapCredits');
   private readonly zone = inject(NgZone);
@@ -99,6 +114,64 @@ export class CesiumMapComponent implements OnDestroy {
       this.updateLayout();
       this.initMap();
     });
+  }
+
+  showTourStep(step: number | null) {
+    if (step !== null && !this.tourState) {
+      this.tourState = {
+        interactive: this.interactive(),
+        conditionsOpen: this.conditionsOpen(),
+        selectedAssessment: this.selectedAssessment(),
+      };
+    }
+    this.tourStep.set(step);
+    if (step === null) {
+      this.restoreTourState();
+      return;
+    }
+    this.tourActions[step]();
+    this.applyInteraction();
+    afterNextRender(() => {
+      this.tourWorkspace().nativeElement.querySelector<HTMLElement>('.tour-highlight')
+        ?.scrollIntoView({ behavior: 'instant', block: 'nearest' });
+    }, { injector: this.injector });
+  }
+
+  private showTourNavigation() {
+    this.cancelTourDrawing();
+    if (!this.interactive()) this.toggleInteraction();
+    this.conditionsOpen.set(false);
+  }
+
+  private showTourDrawing() {
+    if (!this.interactive()) this.toggleInteraction();
+    if (!this.drawing()) {
+      this.drawArea();
+      this.tourDrawing = this.drawing();
+    }
+  }
+
+  private cancelTourDrawing() {
+    if (!this.tourDrawing) return;
+    this.cancelDrawing();
+    this.tourDrawing = false;
+    this.selectAssessment(this.tourState?.selectedAssessment ?? null);
+  }
+
+  private showTourResults() {
+    this.cancelTourDrawing();
+    if (this.useBottomSheet() && !this.conditionsOpen()) this.toggleConditions();
+  }
+
+  private restoreTourState() {
+    const state = this.tourState;
+    if (!state) return;
+    this.cancelTourDrawing();
+    if (this.interactive() !== state.interactive) this.toggleInteraction();
+    this.conditionsOpen.set(state.conditionsOpen);
+    this.selectAssessment(state.selectedAssessment);
+    this.tourState = undefined;
+    this.applyInteraction();
   }
 
   updateLayout() {
@@ -183,7 +256,8 @@ export class CesiumMapComponent implements OnDestroy {
     if (!this.interactive() || !(event instanceof KeyboardEvent) || event.key !== 'Tab'
       || !(event.currentTarget instanceof HTMLElement)) return;
     const dialog = event.target instanceof Element ? event.target.closest('[role="dialog"]') : null;
-    const elements = Array.from((dialog ?? event.currentTarget).querySelectorAll<HTMLElement>(
+    const focusScope = dialog?.getAttribute('aria-modal') === 'false' ? event.currentTarget : dialog ?? event.currentTarget;
+    const elements = Array.from(focusScope.querySelectorAll<HTMLElement>(
       'button:not(:disabled), a[href], input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [tabindex="0"], summary',
     )).filter(element => element.getClientRects().length > 0
       && !element.closest('[inert], [aria-hidden="true"]'));
@@ -388,6 +462,7 @@ export class CesiumMapComponent implements OnDestroy {
   }
 
   private handleMapClick(position: Cartesian2) {
+    if (this.tourStep() !== null) return;
     if (this.drawing()) {
       this.pickDrawingPoint(position);
       return;
@@ -695,7 +770,7 @@ export class CesiumMapComponent implements OnDestroy {
     const viewer = this.viewer;
     if (!viewer || viewer.isDestroyed()) return;
 
-    const enabled = this.interactive();
+    const enabled = this.interactive() && this.tourStep() === null;
     viewer.scene.screenSpaceCameraController.enableInputs = enabled;
     viewer.scene.canvas.style.touchAction = enabled ? 'none' : 'pan-y';
     this.requestMapRender();

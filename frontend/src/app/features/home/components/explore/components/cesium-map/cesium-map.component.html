@@ -1,4 +1,5 @@
 <section
+  #tourWorkspace
   class="cesium-map"
   [class.fullScreen]="interactive()"
   [class.map-unavailable]="mapUnavailable()"
@@ -24,7 +25,7 @@
     class="map-viewport"
     [attr.aria-busy]="mapLoading()"
     [attr.aria-hidden]="mapUnavailable() ? 'true' : null"
-    [attr.inert]="mapUnavailable() ? '' : null"
+    [attr.inert]="mapUnavailable() || tourStep() !== null ? '' : null"
   >
     <div #cesium class="map" [class.map-expanded]="interactive()"></div>
     <div #mapCredits class="map-credits"></div>
@@ -55,7 +56,8 @@
       }
       <p>{{ (hasSelectedArea() ? 'mapLegend.actualNotice' : 'mapLegend.notice') | translate }}</p>
     </aside>
-    <div class="exploreMapContainer" [class.hidden]="interactive()">
+    <div class="exploreMapContainer" [class.hidden]="interactive()"
+      [class.tour-highlight]="!interactive() && tourStep() !== null && tourStep() !== 3">
       <div class="textContainer">
         <p class="title">{{ 'mapControls.title' | translate }}</p>
         <p class="description">
@@ -71,7 +73,8 @@
         {{ 'mapControls.explore' | translate }}
       </button>
     </div>
-    <div class="mapControls" [class.hidden]="!interactive() || drawing()">
+    <div class="mapControls" [class.hidden]="!interactive() || drawing()"
+      [class.tour-highlight]="interactive() && !drawing() && tourStep() !== null && tourStep() !== 3">
       <div class="controlButtonsContainer">
         <button #drawButton class="drawArea" (click)="drawArea()" [attr.aria-disabled]="assessmentLoading() || retrySeconds() > 0">{{ 'mapControls.draw' | translate }}</button>
         <button class="closeMap" (click)="toggleInteraction()">{{ 'mapControls.close' | translate }}</button>
@@ -79,7 +82,8 @@
       <p>{{ 'mapControls.navigationHint' | translate }}</p>
     </div>
 
-    <div class="mapControls drawingPanel" [class.hidden]="!interactive() || !drawing()">
+    <div class="mapControls drawingPanel" [class.hidden]="!interactive() || !drawing()"
+      [class.tour-highlight]="interactive() && drawing() && tourStep() !== null && tourStep() !== 3">
       <button #drawingCloseButton class="closeMap" (click)="toggleInteraction()">
         {{ 'mapControls.close' | translate }}
       </button>
@@ -115,15 +119,18 @@
 
   <div
     class="conditions-sheet"
+    [attr.inert]="tourStep() !== null ? '' : null"
     [hidden]="mapUnavailable()"
     [class.sheet-fullscreen]="useBottomSheet()"
     [class.sheet-open]="useBottomSheet() && conditionsOpen()"
+    [class.tour-highlight]="tourStep() === 3 && !useBottomSheet()"
   >
     @if (useBottomSheet()) {
       <button
         #conditionsButton
         type="button"
         class="conditions-button"
+        [class.tour-highlight]="tourStep() === 3 && useBottomSheet()"
         [attr.aria-expanded]="conditionsOpen()"
         aria-controls="map-conditions"
         [disabled]="drawing()"
@@ -146,4 +153,7 @@
       <ng-content></ng-content>
     </div>
   </div>
+  <app-mini-tour [ready]="!mapUnavailable()"
+    [available]="tourStep() !== null || (!drawing() && !assessmentLoading() && retrySeconds() === 0)"
+    (stepChanged)="showTourStep($event)"></app-mini-tour>
 </section>

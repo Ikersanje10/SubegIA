@@ -6,6 +6,11 @@
   position: relative;
 }
 
+.tour-highlight {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+
 .map-viewport {
   position: relative;
   min-height: 0;
